@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CAMZO — Chameleon Hide & Seek</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/hud.css">
+</head>
+<body>
+  <!-- Ambient Glow Effects -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <div id="app" class="app-container">
+    <!-- Top Header / Bar -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon">🦎</div>
+        <h1 class="logo-text">CAMZO <span class="badge">MECHA CHAMELEON</span></h1>
+      </div>
+      <div class="header-actions">
+        <button id="btn-audio-toggle" class="icon-btn" title="Toggle Sound" aria-label="Toggle Sound">
+          <span id="audio-icon">🔊</span>
+        </button>
+        <button id="btn-help" class="icon-btn" title="How to Play" aria-label="How to Play">
+          <span>❓</span>
+        </button>
+        <button id="btn-restart" class="action-btn outline-btn hidden" title="Abandon & Return to Lobby">
+          <span>⟲ Lobby</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Game Display Area -->
+    <main class="game-viewport-wrapper">
+      <div id="canvas-container" class="canvas-container">
+        <!-- Multi-layer Canvases (1280x720 native internal res) -->
+        <canvas id="bg-canvas" width="1280" height="720"></canvas>
+        <canvas id="character-canvas" width="1280" height="720"></canvas>
+        <canvas id="paint-canvas" width="1280" height="720"></canvas>
+        <canvas id="vision-canvas" width="1280" height="720"></canvas>
+        <canvas id="fx-canvas" width="1280" height="720"></canvas>
+
+        <!-- Floating Eyedropper Magnifier Loupe -->
+        <div id="eyedropper-loupe" class="loupe hidden">
+          <canvas id="loupe-canvas" width="60" height="60"></canvas>
+          <div class="loupe-crosshair"></div>
+          <div id="loupe-color-hex" class="loupe-hex">#FFFFFF</div>
+        </div>
+
+        <!-- Dynamic Circular Brush Cursor Indicator -->
+        <div id="brush-cursor" class="brush-cursor hidden"></div>
+
+        <!-- Dramatic Phase Announcements Banner Overlay -->
+        <div id="phase-banner" class="phase-banner hidden">
+          <div class="banner-badge" id="banner-badge">PHASE START</div>
+          <h2 class="banner-title" id="banner-title">HIDE!</h2>
+          <div class="banner-countdown" id="banner-countdown">30</div>
+          <p class="banner-subtitle" id="banner-subtitle">Sample background colors and paint camouflage over your stickman!</p>
+        </div>
+
+        <!-- Floating Urgent Countdown (Pure number, zero banner box) -->
+        <div id="urgent-countdown" class="urgent-countdown hidden"></div>
+
+        <!-- Investigation Miss / Hit Floating Alert -->
+        <div id="investigation-feedback" class="investigation-feedback hidden"></div>
+
+        <!-- Anti-peeking screen for Hunter during Hiding Phase in Online Multiplayer -->
+        <div id="hunter-waiting-screen" class="hunter-waiting-screen hidden">
+          <div class="radar-box">
+            <div class="radar-spinner"></div>
+            <div class="radar-center-blip"></div>
+          </div>
+          <h2 class="waiting-title">HIDERS ARE CAMOUFLAGING...</h2>
+          <div id="waiting-countdown-val" class="waiting-timer-val">30</div>
+          <p class="waiting-subtitle">Keep your eyes off the screen! Listen closely. Hunting begins the moment camouflage locks in.</p>
+        </div>
+
+        <!-- Spectator Banner for Hiders while Hunter is searching -->
+        <div id="hider-spectator-banner" class="hider-spectator-banner hidden">
+          <div class="live-indicator"><span class="pulse-red"></span> LIVE SPECTATING</div>
+          <span class="spectator-text">The Hunter is scanning the map. Watch their flashlight beam!</span>
+        </div>
+      </div>
+
+      <!-- In-Game Bottom / Top HUD (Hidden in Lobby) -->
+      <div id="game-hud" class="game-hud hidden">
+        <!-- Top Status Bar during Gameplay -->
+        <div class="hud-top-bar">
+          <div class="hud-stat-box phase-indicator">
+            <span class="hud-label">CURRENT PHASE</span>
+            <span id="hud-phase-name" class="hud-value highlight-cyan">HIDING</span>
+          </div>
+
+          <div class="hud-timer-card">
+            <span id="hud-timer-label" class="timer-label">TIME REMAINING</span>
+            <div id="hud-timer-val" class="timer-display">30</div>
+          </div>
+
+          <div class="hud-stat-box lives-indicator">
+            <div class="lives-header">
+              <span class="hud-label">HIDER LIVES</span>
+              <span id="hud-lives-count" class="hud-value highlight-pink">10 / 10</span>
+            </div>
+            <div id="lives-hearts-container" class="lives-hearts">
+              <!-- 10 Life heart icons dynamically populated -->
+            </div>
+          </div>
+
+          <div class="hud-stat-box hiders-left-box">
+            <span class="hud-label">HIDERS REMAINING</span>
+            <span id="hud-hiders-left" class="hud-value highlight-green">1 / 1</span>
+          </div>
+        </div>
+
+        <!-- Bottom Controls Bar for Hiding Phase -->
+        <div id="hud-hider-controls" class="hud-bottom-bar hider-bar">
+          <div class="tool-group">
+            <div class="color-sample-card">
+              <div id="color-preview-swatch" class="color-swatch" style="background-color: #3b82f6;"></div>
+              <div class="color-meta">
+                <span class="tool-title">CURRENT COLOR</span>
+                <span id="color-hex-text" class="tool-value">#3B82F6</span>
+              </div>
+            </div>
+
+            <!-- Recent Colors Palette History -->
+            <div class="recent-palette">
+              <span class="palette-label">RECENT:</span>
+              <div id="palette-chips" class="palette-chips">
+                <!-- Color chips populated as player samples -->
+              </div>
+            </div>
+          </div>
+
+          <div class="tool-group brush-control-group">
+            <div class="brush-size-card">
+              <span class="tool-title">BRUSH SIZE (SCROLL WHEEL)</span>
+              <div class="slider-with-val">
+                <input type="range" id="brush-size-slider" min="6" max="64" value="24" step="2">
+                <span id="brush-size-display" class="tool-value">24px</span>
+              </div>
+            </div>
+
+            <!-- Opacity indicator — updated by Ctrl+Scroll -->
+            <div class="brush-size-card" style="margin-top:4px;">
+              <span class="tool-title">OPACITY (CTRL + SCROLL)</span>
+              <div class="slider-with-val">
+                <div style="flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.1);position:relative;overflow:hidden;">
+                  <div id="brush-opacity-bar" style="height:100%;width:100%;background:linear-gradient(90deg,rgba(0,240,255,0.6),rgba(0,240,255,1));border-radius:3px;transition:width 0.1s;"></div>
+                </div>
+                <span id="brush-opacity-display" class="tool-value">100%</span>
+              </div>
+            </div>
+
+            <div class="brush-mode-group">
+              <button class="brush-type-btn active" data-type="solid" title="Solid Brush">✏️ Solid</button>
+              <button class="brush-type-btn" data-type="spray" title="Soft Camo Spray">💨 Soft</button>
+              <button class="brush-type-btn" data-type="stipple" title="Textured Noise">✨ Texture</button>
+            </div>
+          </div>
+
+          <div class="tool-group action-group">
+            <button id="btn-undo-paint" class="hud-btn secondary-btn" title="Undo last paint stroke (Ctrl+Z)">
+              <span>↺ Undo</span>
+            </button>
+            <button id="btn-clear-paint" class="hud-btn secondary-btn" title="Clear all camouflage">
+              <span>🗑️ Clear</span>
+            </button>
+            <button id="btn-relocate" class="hud-btn secondary-btn" title="Pick up and move stickman to a new position">
+              <span>📍 Move</span>
+            </button>
+            <button id="btn-finish-hiding" class="hud-btn primary-btn pulse-anim" title="Lock in your disguise early">
+              <span>✓ Ready to Hunt!</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Bottom Controls Bar for Hunting Phase -->
+        <div id="hud-hunter-controls" class="hud-bottom-bar hunter-bar hidden">
+          <div class="hunter-hint">
+            <span class="pulse-dot"></span>
+            <span>Move cursor to shine flashlight. <strong>LEFT CLICK</strong> to investigate suspicious spots! Each miss costs 1 Hider life.</span>
+          </div>
+          <div class="hunter-stats">
+            <div class="stat-pill">
+              <span class="pill-label">ACCURACY:</span>
+              <span id="hunter-accuracy-pill" class="pill-value">100%</span>
+            </div>
+            <div class="stat-pill">
+              <span class="pill-label">CLICKS:</span>
+              <span id="hunter-clicks-pill" class="pill-value">0</span>
+            </div>
+            <div class="stat-pill">
+              <span class="pill-label">MISSES:</span>
+              <span id="hunter-misses-pill" class="pill-value">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Lobby Modal / Overlay -->
+    <div id="lobby-screen" class="modal-backdrop visible">
+      <div class="modal-card lobby-card">
+        <div class="lobby-header">
+          <div class="lobby-title-wrap">
+            <span class="game-tag">STEALTH ARCADIA</span>
+            <h2 class="lobby-title">CAMZO <span class="neon-text">CHAMELEON</span></h2>
+            <p class="lobby-tagline">Paint yourself into the background. Hunt through the dark.</p>
+          </div>
+          <div class="character-preview-avatar">
+            <canvas id="stickman-preview-canvas" width="100" height="120"></canvas>
+          </div>
+        </div>
+
+        <div class="lobby-settings-grid">
+          <!-- Game Mode Selector -->
+          <div class="setting-item full-width">
+            <label class="setting-label">SELECT GAME MODE</label>
+            <div class="mode-options">
+              <label class="mode-card active">
+                <input type="radio" name="game-mode" value="pass-and-play" checked>
+                <div class="mode-card-content">
+                  <div class="mode-icon">👥</div>
+                  <div class="mode-name">Pass & Play (Hotseat)</div>
+                  <div class="mode-desc">Player 1 hides & camouflages, then Player 2 searches with flashlight.</div>
+                </div>
+              </label>
+              <label class="mode-card">
+                <input type="radio" name="game-mode" value="solo-hider">
+                <div class="mode-card-content">
+                  <div class="mode-icon">🤖</div>
+                  <div class="mode-name">Solo Hider vs AI Hunter</div>
+                  <div class="mode-desc">Camouflage yourself; see if the AI flashlight detective can spot you!</div>
+                </div>
+              </label>
+              <label class="mode-card">
+                <input type="radio" name="game-mode" value="solo-hunter">
+                <div class="mode-card-content">
+                  <div class="mode-icon">🔦</div>
+                  <div class="mode-name">Solo Hunter vs AI Hiders</div>
+                  <div class="mode-desc">Multiple AI stickmen disguise into the background. Hunt them all down!</div>
+                </div>
+              </label>
+              <label class="mode-card" id="mode-card-multiplayer">
+                <input type="radio" name="game-mode" value="online-multiplayer">
+                <div class="mode-card-content">
+                  <div class="mode-icon">🌐</div>
+                  <div class="mode-name">Online Multiplayer <span class="badge-new">ROOM CODE</span></div>
+                  <div class="mode-desc">Create or join a private room with friends via a 5-letter code!</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Online Multiplayer Panel (Visible only when Online Multiplayer is selected) -->
+          <div id="multiplayer-panel" class="setting-item full-width multiplayer-panel hidden">
+            <!-- 1. Not in room view: Create or Join -->
+            <div id="mp-entry-view" class="mp-entry-view">
+              <div class="mp-entry-row">
+                <div class="mp-input-group">
+                  <label class="setting-label" for="mp-nickname">YOUR NICKNAME</label>
+                  <input type="text" id="mp-nickname" class="mp-text-input" placeholder="Player Nickname" maxlength="15" value="Player 1">
+                </div>
+              </div>
+              <div class="mp-actions-grid" style="margin-top: 10px;">
+                <button type="button" id="btn-mp-create-room" class="btn-mp-action btn-mp-primary">
+                  <span>✨ Create New Room</span>
+                </button>
+                <div class="mp-divider-or">— OR —</div>
+                <div style="display:flex;gap:6px;">
+                  <input type="text" id="mp-room-code-input" class="mp-text-input mp-code-input" placeholder="CODE" maxlength="5">
+                  <button type="button" id="btn-mp-join-room" class="btn-mp-action btn-mp-secondary">
+                    <span>Join Room ➜</span>
+                  </button>
+                </div>
+              </div>
+              <div id="mp-error-msg" class="custom-bg-name hidden" style="color:#ff2a85;background:rgba(255,42,133,0.1);margin-top:8px;"></div>
+            </div>
+
+            <!-- 2. Inside Room Lobby View -->
+            <div id="mp-room-view" class="mp-room-view hidden">
+              <div class="room-header-card">
+                <div class="room-code-tag">
+                  <span class="room-code-label">ROOM CODE:</span>
+                  <span id="mp-display-room-code" class="room-code-val">CAMZ1</span>
+                  <button type="button" id="btn-mp-copy-code" class="btn-copy-code" title="Copy room code">📋 Copy</button>
+                </div>
+                <button type="button" id="btn-mp-leave-room" class="btn-mp-action btn-mp-secondary" style="padding:4px 10px;font-size:11px;">
+                  <span>✕ Leave Room</span>
+                </button>
+              </div>
+
+              <!-- Connected Players in Room -->
+              <div class="players-list-section" style="margin-top: 10px;">
+                <label class="setting-label">CONNECTED PLAYERS (CLICK ROLE TO TOGGLE)</label>
+                <div id="mp-players-list" class="players-list-grid">
+                  <!-- Dynamically populated player cards -->
+                </div>
+              </div>
+
+              <div id="mp-room-waiting-notice" class="room-waiting-notice hidden" style="margin-top: 10px;">
+                <span>⏳ Waiting for Room Host to start match...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Number of Hiders -->
+          <div class="setting-item">
+            <label class="setting-label" for="select-hiders-count">NUMBER OF HIDERS</label>
+            <select id="select-hiders-count" class="select-input">
+              <option value="1" selected>1 Hider</option>
+              <option value="2">2 Hiders</option>
+              <option value="3">3 Hiders</option>
+              <option value="4">4 Hiders</option>
+            </select>
+          </div>
+
+          <!-- Background Image Source -->
+          <div class="setting-item">
+            <label class="setting-label" for="select-background">BACKGROUND MAP</label>
+            <select id="select-background" class="select-input">
+              <option value="random" selected>🎲 Random Procedural Map</option>
+              <option value="procedural-forest">🌲 Verdant Jungle</option>
+              <option value="procedural-city">🏙️ Cyberpunk Alley</option>
+              <option value="procedural-warehouse">📦 Industrial Warehouse</option>
+              <option value="procedural-beach">🏖️ Tropical Coral Beach</option>
+              <option value="procedural-library">📚 Grand Ancient Library</option>
+              <option value="procedural-arcade">🕹️ Retro 80s Arcade</option>
+              <option value="procedural-graffiti">🎨 Street Art Wall</option>
+              <option value="procedural-candy">🍭 Sweet Candy Land</option>
+              <option value="procedural-circuit">⚡ Cyber Circuit Board</option>
+              <option value="procedural-autumn">🍂 Golden Autumn Park</option>
+            </select>
+          </div>
+
+          <!-- Custom Background Upload -->
+          <div class="setting-item full-width custom-bg-upload-box">
+            <label class="setting-label">OR USE CUSTOM BACKGROUND IMAGE</label>
+            <div class="upload-dropzone" id="upload-dropzone">
+              <span class="upload-icon">🖼️</span>
+              <span class="upload-text">Click or Drag & Drop an image from your computer</span>
+              <input type="file" id="custom-bg-input" accept="image/*" class="file-input-hidden">
+            </div>
+            <div id="custom-bg-preview-name" class="custom-bg-name hidden"></div>
+          </div>
+
+          <!-- Hiding Duration -->
+          <div class="setting-item">
+            <label class="setting-label" for="select-hiding-time">HIDING TIME</label>
+            <select id="select-hiding-time" class="select-input">
+              <option value="15">15 Seconds (Rapid)</option>
+              <option value="30" selected>30 Seconds (Default)</option>
+              <option value="45">45 Seconds (Relaxed)</option>
+              <option value="60">60 Seconds (Detailed)</option>
+            </select>
+          </div>
+
+          <!-- Hunter Vision Radius -->
+          <div class="setting-item">
+            <label class="setting-label" for="select-vision-radius">HUNTER VISION RADIUS</label>
+            <select id="select-vision-radius" class="select-input">
+              <option value="120">Narrow (120px — Hard)</option>
+              <option value="160" selected>Standard (160px — Normal)</option>
+              <option value="200">Wide (200px — Easy)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="lobby-footer">
+          <div class="controls-cheat-sheet">
+            <span>🎨 <strong>Right-Click:</strong> Color Sample</span>
+            <span>🖌️ <strong>Left-Click:</strong> Paint Camo</span>
+            <span>🖱️ <strong>Scroll:</strong> Brush Size</span>
+            <span>⌨️ <strong>WASD/Drag:</strong> Move Hider</span>
+          </div>
+          <button id="btn-start-game" class="btn-start-match">
+            <span>START GAME</span>
+            <span class="arrow-icon">▶</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pass & Play Transition Curtain Overlay -->
+    <div id="pass-device-modal" class="modal-backdrop hidden">
+      <div class="modal-card pass-card text-center">
+        <div class="pass-icon">🔄</div>
+        <h2 class="pass-title">PASS THE DEVICE TO THE HUNTER!</h2>
+        <p class="pass-desc">Hider camouflage is locked in. Hand over the mouse to the Hunter now. No peeking!</p>
+        <button id="btn-hunter-ready" class="hud-btn primary-btn large-btn">
+          <span>I'M READY TO HUNT 🔍</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Game Over Screen: Just pure floating text without any banner box -->
+    <div id="gameover-modal" class="gameover-overlay hidden">
+      <div id="gameover-title" class="gameover-text-only">HIDER WINS</div>
+      <div class="gameover-actions-minimal">
+        <button id="btn-play-again" class="action-btn primary-btn">
+          <span>🎮 Play Again</span>
+        </button>
+        <button id="btn-lobby-return" class="action-btn secondary-btn">
+          <span>🏠 Main Menu</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- How To Play Modal -->
+    <div id="help-modal" class="modal-backdrop hidden">
+      <div class="modal-card help-card">
+        <div class="modal-header">
+          <h2>HOW TO PLAY CAMZO</h2>
+          <button id="btn-close-help" class="close-btn">&times;</button>
+        </div>
+        <div class="help-content">
+          <div class="help-section">
+            <div class="section-icon">🦎</div>
+            <div class="section-text">
+              <h3>Role 1: The Hider (Camouflage Phase)</h3>
+              <p>You control a stickman placed on the background. Blend your character into your surroundings before the timer expires!</p>
+              <ul>
+                <li><strong>Right Click:</strong> Eyedropper — samples the exact pixel color from the background.</li>
+                <li><strong>Left Click & Drag:</strong> Paintbrush — paints smoothly over your stickman with the sampled color.</li>
+                <li><strong>Mouse Scroll:</strong> Adjusts brush size from fine detail (6px) to wide coverage (64px).</li>
+                <li><strong>Arrow Keys / WASD / Drag:</strong> Reposition your stickman anywhere on the canvas.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="help-section">
+            <div class="section-icon">🔦</div>
+            <div class="section-text">
+              <h3>Role 2: The Hunter (Hunting Phase)</h3>
+              <p>The screen goes dark. A circular flashlight follows your mouse cursor.</p>
+              <ul>
+                <li><strong>Search:</strong> Pan your flashlight circle across the map to spot hidden stickmen silhouettes or paint seams.</li>
+                <li><strong>Left Click:</strong> Investigate a spot!</li>
+                <li><strong>Hit:</strong> Hider is found! Revealed with neon aura.</li>
+                <li><strong>Miss:</strong> Every miss deducts <strong>1 Life</strong> from all active Hiders (10 lives total). When lives reach 0, Hiders are eliminated!</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
