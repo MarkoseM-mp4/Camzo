@@ -44,13 +44,16 @@ export class Stickman {
   containsPoint(px, py) {
     if (this.found || this.eliminated) return false;
     const box = this.getHitbox();
-    const margin = 12;
-    return (
+    const margin = 20;
+    const inBox = (
       px >= box.x - margin &&
       px <= box.x + box.width + margin &&
       py >= box.y - margin &&
       py <= box.y + box.height + margin
     );
+    const dist = Math.hypot(px - this.x, py - this.y);
+    const radialHit = dist <= (85 * this.scale);
+    return inBox || radialHit;
   }
 
   // Draw the thick rubbery stickman path

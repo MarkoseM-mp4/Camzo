@@ -19,7 +19,17 @@ export class EnvironmentManager {
       { id: 'procedural-graffiti', name: '🎨 Street Art Wall' },
       { id: 'procedural-candy', name: '🍭 Sweet Candy Land' },
       { id: 'procedural-circuit', name: '⚡ Cyber Circuit Board' },
-      { id: 'procedural-autumn', name: '🍂 Golden Autumn Park' }
+      { id: 'procedural-autumn', name: '🍂 Golden Autumn Park' },
+      { id: 'procedural-volcano', name: '🌋 Magma Cavern' },
+      { id: 'procedural-space', name: '🚀 Cosmic Nebula' },
+      { id: 'procedural-arctic', name: '❄️ Crystal Ice Cave' },
+      { id: 'procedural-egypt', name: '🏺 Pharaoh\'s Tomb' },
+      { id: 'procedural-mystic', name: '🔮 Mystic Mushroom Hollow' },
+      { id: 'procedural-underwater', name: '🌊 Sunken Atlantis' },
+      { id: 'procedural-dojo', name: '🌸 Zen Bamboo Garden' },
+      { id: 'procedural-steampunk', name: '⚙️ Steampunk Workshop' },
+      { id: 'procedural-haunted', name: '🏰 Haunted Gothic Castle' },
+      { id: 'procedural-matrix', name: '🟢 Digital Cyber Matrix' }
     ];
 
     this.currentBackgroundName = 'Default';
@@ -122,6 +132,46 @@ export class EnvironmentManager {
       case 'procedural-autumn':
         this.drawAutumnPark(ctx, canvas.width, canvas.height);
         this.currentBackgroundName = 'Golden Autumn Park';
+        break;
+      case 'procedural-volcano':
+        this.drawMagmaCavern(ctx, canvas.width, canvas.height);
+        this.currentBackgroundName = 'Magma Cavern';
+        break;
+      case 'procedural-space':
+        this.drawCosmicNebula(ctx, canvas.width, canvas.height);
+        this.currentBackgroundName = 'Cosmic Nebula';
+        break;
+      case 'procedural-arctic':
+        this.drawIceCave(ctx, canvas.width, canvas.height);
+        this.currentBackgroundName = 'Crystal Ice Cave';
+        break;
+      case 'procedural-egypt':
+        this.drawPharaohTomb(ctx, canvas.width, canvas.height);
+        this.currentBackgroundName = 'Pharaoh\'s Tomb';
+        break;
+      case 'procedural-mystic':
+        this.drawMysticHollow(ctx, canvas.width, canvas.height);
+        this.currentBackgroundName = 'Mystic Mushroom Hollow';
+        break;
+      case 'procedural-underwater':
+        this.drawSunkenAtlantis(ctx, canvas.width, canvas.height);
+        this.currentBackgroundName = 'Sunken Atlantis';
+        break;
+      case 'procedural-dojo':
+        this.drawZenGarden(ctx, canvas.width, canvas.height);
+        this.currentBackgroundName = 'Zen Bamboo Garden';
+        break;
+      case 'procedural-steampunk':
+        this.drawSteampunkWorkshop(ctx, canvas.width, canvas.height);
+        this.currentBackgroundName = 'Steampunk Workshop';
+        break;
+      case 'procedural-haunted':
+        this.drawHauntedCastle(ctx, canvas.width, canvas.height);
+        this.currentBackgroundName = 'Haunted Gothic Castle';
+        break;
+      case 'procedural-matrix':
+        this.drawCyberMatrix(ctx, canvas.width, canvas.height);
+        this.currentBackgroundName = 'Digital Cyber Matrix';
         break;
       case 'procedural-forest':
       default:
@@ -1014,6 +1064,1292 @@ export class EnvironmentManager {
     }
 
     this.addMicroTexture(ctx, w, h, 0.04);
+  }
+
+  /* -------------------------------------------------------------
+     PROCEDURAL BACKGROUND 11: MAGMA CAVERN
+     ------------------------------------------------------------- */
+  drawMagmaCavern(ctx, w, h) {
+    // Dark charred volcanic cavern backdrop
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, '#100505');
+    sky.addColorStop(0.5, '#240a0a');
+    sky.addColorStop(0.85, '#3b0d0d');
+    sky.addColorStop(1, '#1a0505');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h);
+
+    // Jagged volcanic ceiling stalactites
+    ctx.fillStyle = '#1c0c0c';
+    for (let x = 0; x < w + 40; x += 35) {
+      const sh = 40 + (this.rnd() * 80);
+      const sw = 25 + this.rnd() * 25;
+      ctx.beginPath();
+      ctx.moveTo(x - sw / 2, 0);
+      ctx.lineTo(x, sh);
+      ctx.lineTo(x + sw / 2, 0);
+      ctx.fill();
+    }
+
+    // Basalt hexagonal pillars along the sides
+    const pillarColors = ['#180e0e', '#231414', '#2d1818'];
+    for (let i = 0; i < 14; i++) {
+      const px = (i % 2 === 0) ? (i * 28) : (w - (i * 28) - 30);
+      const ph = 180 + (i * 37) % 240;
+      const pw = 36 + (i % 3) * 8;
+      ctx.fillStyle = pillarColors[i % pillarColors.length];
+      ctx.fillRect(px, h - ph - 60, pw, ph);
+      // Basalt column highlights
+      ctx.fillStyle = '#3a2020';
+      ctx.fillRect(px + 4, h - ph - 60, 6, ph);
+      ctx.fillStyle = '#0f0707';
+      ctx.fillRect(px + pw - 6, h - ph - 60, 6, ph);
+    }
+
+    // Glowing fissures in rock walls
+    ctx.strokeStyle = '#f97316';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 10; i++) {
+      let fx = this.rnd() * w;
+      let fy = h * 0.2 + this.rnd() * (h * 0.45);
+      ctx.beginPath();
+      ctx.moveTo(fx, fy);
+      for (let s = 0; s < 5; s++) {
+        fx += (this.rnd() - 0.5) * 45;
+        fy += 12 + this.rnd() * 20;
+        ctx.lineTo(fx, fy);
+      }
+      ctx.stroke();
+    }
+
+    // Cascading Molten Lava River
+    const lavaGrad = ctx.createLinearGradient(0, h * 0.65, 0, h);
+    lavaGrad.addColorStop(0, '#991b1b');
+    lavaGrad.addColorStop(0.2, '#dc2626');
+    lavaGrad.addColorStop(0.5, '#ea580c');
+    lavaGrad.addColorStop(0.8, '#f59e0b');
+    lavaGrad.addColorStop(1, '#fef08a');
+
+    ctx.fillStyle = lavaGrad;
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.72);
+    ctx.bezierCurveTo(w * 0.3, h * 0.62, w * 0.6, h * 0.78, w, h * 0.68);
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.fill();
+
+    // Hot golden lava flow ripples
+    ctx.strokeStyle = '#fffbeb';
+    ctx.lineWidth = 3;
+    for (let r = 0; r < 9; r++) {
+      const rx = (r * 130 + 30) % w;
+      const ry = h * 0.75 + (r % 4) * 18;
+      ctx.beginPath();
+      ctx.ellipse(rx, ry, 45 + (r % 3) * 20, 8, -0.1, 0, Math.PI);
+      ctx.stroke();
+    }
+
+    // Magma bubbles
+    for (let b = 0; b < 16; b++) {
+      const bx = this.rnd() * w;
+      const by = h * 0.74 + this.rnd() * (h * 0.22);
+      const br = 6 + this.rnd() * 12;
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(bx, by, br, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.arc(bx, by, br * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Floating incandescent fiery embers & sparks
+    const emberColors = ['#fef08a', '#fde047', '#f97316', '#ef4444'];
+    for (let e = 0; e < 110; e++) {
+      const ex = this.rnd() * w;
+      const ey = this.rnd() * (h * 0.85);
+      const er = 1.5 + this.rnd() * 3.5;
+      ctx.fillStyle = emberColors[e % emberColors.length];
+      ctx.beginPath();
+      ctx.arc(ex, ey, er, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    this.addMicroTexture(ctx, w, h, 0.05);
+  }
+
+  /* -------------------------------------------------------------
+     PROCEDURAL BACKGROUND 12: COSMIC NEBULA
+     ------------------------------------------------------------- */
+  drawCosmicNebula(ctx, w, h) {
+    // Deep cosmic void backdrop
+    const spaceGrad = ctx.createLinearGradient(0, 0, w, h);
+    spaceGrad.addColorStop(0, '#02010a');
+    spaceGrad.addColorStop(0.5, '#070319');
+    spaceGrad.addColorStop(1, '#020008');
+    ctx.fillStyle = spaceGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Glowing vibrant nebula gas clouds
+    const nebulae = [
+      { x: w * 0.25, y: h * 0.35, r: 240, c1: 'rgba(147, 51, 234, 0.38)', c2: 'rgba(79, 70, 229, 0)' },
+      { x: w * 0.7, y: h * 0.6, r: 280, c1: 'rgba(236, 72, 153, 0.35)', c2: 'rgba(168, 85, 247, 0)' },
+      { x: w * 0.5, y: h * 0.2, r: 220, c1: 'rgba(6, 182, 212, 0.32)', c2: 'rgba(14, 165, 233, 0)' },
+      { x: w * 0.82, y: h * 0.25, r: 200, c1: 'rgba(244, 63, 94, 0.28)', c2: 'rgba(217, 70, 239, 0)' },
+      { x: w * 0.15, y: h * 0.75, r: 210, c1: 'rgba(59, 130, 246, 0.3)', c2: 'rgba(16, 185, 129, 0)' }
+    ];
+
+    nebulae.forEach(neb => {
+      const g = ctx.createRadialGradient(neb.x, neb.y, 20, neb.x, neb.y, neb.r);
+      g.addColorStop(0, neb.c1);
+      g.addColorStop(1, neb.c2);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(neb.x, neb.y, neb.r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Starfield (320 stars)
+    const starColors = ['#ffffff', '#bae6fd', '#fef08a', '#fbcfe8', '#a7f3d0'];
+    for (let s = 0; s < 320; s++) {
+      const sx = this.rnd() * w;
+      const sy = this.rnd() * h;
+      const sr = 0.7 + this.rnd() * 2.2;
+      ctx.fillStyle = starColors[s % starColors.length];
+      ctx.beginPath();
+      ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Starburst cross on brightest stars
+      if (s % 22 === 0) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(sx - 7, sy);
+        ctx.lineTo(sx + 7, sy);
+        ctx.moveTo(sx, sy - 7);
+        ctx.lineTo(sx, sy + 7);
+        ctx.stroke();
+      }
+    }
+
+    // Majestic Ringed Gas Giant Planet
+    const px = w * 0.74;
+    const py = h * 0.34;
+    const pr = 58;
+
+    // Atmospheric planet glow
+    const planetAtm = ctx.createRadialGradient(px, py, pr * 0.8, px, py, pr * 1.35);
+    planetAtm.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+    planetAtm.addColorStop(1, 'rgba(56, 189, 248, 0)');
+    ctx.fillStyle = planetAtm;
+    ctx.beginPath();
+    ctx.arc(px, py, pr * 1.35, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Planet body with atmospheric bands
+    const planetGrad = ctx.createLinearGradient(px - pr, py - pr, px + pr, py + pr);
+    planetGrad.addColorStop(0, '#38bdf8');
+    planetGrad.addColorStop(0.35, '#818cf8');
+    planetGrad.addColorStop(0.65, '#c084fc');
+    planetGrad.addColorStop(1, '#1e1b4b');
+    ctx.fillStyle = planetGrad;
+    ctx.beginPath();
+    ctx.arc(px, py, pr, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Planetary Rings (tilted ellipse)
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(-0.38);
+    // Outer bright ring
+    ctx.strokeStyle = 'rgba(224, 231, 255, 0.65)';
+    ctx.lineWidth = 14;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, pr * 2.2, pr * 0.55, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    // Inner ring
+    ctx.strokeStyle = 'rgba(165, 180, 252, 0.45)';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, pr * 1.75, pr * 0.42, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+
+    // Distant Cratered Moon
+    const mx = w * 0.2;
+    const my = h * 0.22;
+    const mr = 22;
+    const moonGrad = ctx.createRadialGradient(mx - 5, my - 5, 3, mx, my, mr);
+    moonGrad.addColorStop(0, '#f1f5f9');
+    moonGrad.addColorStop(0.7, '#94a3b8');
+    moonGrad.addColorStop(1, '#334155');
+    ctx.fillStyle = moonGrad;
+    ctx.beginPath();
+    ctx.arc(mx, my, mr, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Orbital space satellite station
+    const satX = w * 0.42;
+    const satY = h * 0.68;
+    // Station core
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(satX - 10, satY - 7, 20, 14);
+    // Blue solar panel wings
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(satX - 45, satY - 14, 30, 28);
+    ctx.fillRect(satX + 15, satY - 14, 30, 28);
+    ctx.strokeStyle = '#e0f2fe';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(satX - 45, satY - 14, 30, 28);
+    ctx.strokeRect(satX + 15, satY - 14, 30, 28);
+    // Blinking beacon
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(satX, satY - 10, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Shooting star meteor trail
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.12, h * 0.1);
+    ctx.lineTo(w * 0.26, h * 0.24);
+    ctx.stroke();
+
+    this.addMicroTexture(ctx, w, h, 0.04);
+  }
+
+  /* -------------------------------------------------------------
+     PROCEDURAL BACKGROUND 13: CRYSTAL ICE CAVE
+     ------------------------------------------------------------- */
+  drawIceCave(ctx, w, h) {
+    // Frosty glacial cavern backdrop
+    const iceGrad = ctx.createLinearGradient(0, 0, 0, h);
+    iceGrad.addColorStop(0, '#031828');
+    iceGrad.addColorStop(0.4, '#072e4a');
+    iceGrad.addColorStop(0.75, '#0c466e');
+    iceGrad.addColorStop(1, '#021e33');
+    ctx.fillStyle = iceGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Ethereal Aurora Borealis curtains across the cavern roof
+    const auroraWaves = [
+      { col: 'rgba(16, 185, 129, 0.35)', y: h * 0.22, amp: 26 },
+      { col: 'rgba(20, 184, 166, 0.32)', y: h * 0.28, amp: 32 },
+      { col: 'rgba(168, 85, 247, 0.28)', y: h * 0.18, amp: 20 }
+    ];
+
+    auroraWaves.forEach(aw => {
+      ctx.fillStyle = aw.col;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      for (let x = 0; x <= w; x += 30) {
+        const y = aw.y + Math.sin((x / w) * 8 + aw.amp) * aw.amp;
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(w, 0);
+      ctx.fill();
+    });
+
+    // Sharp hanging translucent icicles
+    for (let x = 10; x < w + 20; x += 32) {
+      const ih = 50 + (this.rnd() * 110);
+      const iw = 14 + (this.rnd() * 18);
+      // Ice body
+      ctx.fillStyle = (x % 2 === 0) ? '#38bdf8' : '#7dd3fc';
+      ctx.beginPath();
+      ctx.moveTo(x - iw / 2, 0);
+      ctx.lineTo(x, ih);
+      ctx.lineTo(x + iw / 2, 0);
+      ctx.fill();
+      // White sharp specular glint
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x - iw / 4, 0);
+      ctx.lineTo(x, ih - 4);
+      ctx.stroke();
+    }
+
+    // Faceted quartz & ice crystal clusters growing from walls and ground
+    const crystalColors = ['#0284c7', '#38bdf8', '#7dd3fc', '#bae6fd', '#e0f2fe'];
+    for (let c = 0; c < 22; c++) {
+      const cx = (c * 65) % w + (this.rnd() * 30);
+      const cy = h - 35 - (this.rnd() * 100);
+      const cw = 20 + this.rnd() * 24;
+      const ch = 60 + this.rnd() * 100;
+      const tilt = (this.rnd() - 0.5) * 0.6;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(tilt);
+
+      // Faceted polygon crystal
+      ctx.fillStyle = crystalColors[c % crystalColors.length];
+      ctx.beginPath();
+      ctx.moveTo(-cw / 2, 0);
+      ctx.lineTo(0, -ch);
+      ctx.lineTo(cw / 2, 0);
+      ctx.lineTo(0, 10);
+      ctx.fill();
+
+      // Shaded crystal facet
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.beginPath();
+      ctx.moveTo(0, -ch);
+      ctx.lineTo(cw / 2, 0);
+      ctx.lineTo(0, 10);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Frozen glacier floor with fracture sheen
+    const floorGrad = ctx.createLinearGradient(0, h - 75, 0, h);
+    floorGrad.addColorStop(0, '#0284c7');
+    floorGrad.addColorStop(0.5, '#38bdf8');
+    floorGrad.addColorStop(1, '#0369a1');
+    ctx.fillStyle = floorGrad;
+    ctx.fillRect(0, h - 75, w, 75);
+
+    // Deep ice cracks in frozen floor
+    ctx.strokeStyle = '#e0f2fe';
+    ctx.lineWidth = 2;
+    for (let k = 0; k < 6; k++) {
+      let kx = k * (w / 5) + 30;
+      let ky = h - 65;
+      ctx.beginPath();
+      ctx.moveTo(kx, ky);
+      for (let s = 0; s < 4; s++) {
+        kx += (this.rnd() - 0.5) * 60;
+        ky += 15 + this.rnd() * 10;
+        ctx.lineTo(kx, ky);
+      }
+      ctx.stroke();
+    }
+
+    // Drifting snowflakes & glistening frost motes
+    ctx.fillStyle = '#ffffff';
+    for (let f = 0; f < 130; f++) {
+      const fx = this.rnd() * w;
+      const fy = this.rnd() * h;
+      const fr = 1 + this.rnd() * 2.5;
+      ctx.beginPath();
+      ctx.arc(fx, fy, fr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    this.addMicroTexture(ctx, w, h, 0.04);
+  }
+
+  /* -------------------------------------------------------------
+     PROCEDURAL BACKGROUND 14: PHARAOH'S TOMB
+     ------------------------------------------------------------- */
+  drawPharaohTomb(ctx, w, h) {
+    // Ancient desert sandstone wall
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(0, 0, w, h);
+
+    // Weathered sandstone brick masonry
+    const blockH = 34;
+    const blockW = 75;
+    for (let y = 0; y < h; y += blockH) {
+      const offset = (Math.floor(y / blockH) % 2) * (blockW / 2);
+      for (let x = -blockW; x < w + blockW; x += blockW) {
+        ctx.fillStyle = ((x + y) % 3 === 0) ? '#78350f' : (((x + y) % 5 === 0) ? '#92400e' : '#b45309');
+        ctx.fillRect(x + offset + 2, y + 2, blockW - 4, blockH - 4);
+      }
+    }
+
+    // Massive carved Egyptian columns with lotus capitals
+    for (let x = 60; x < w; x += 260) {
+      // Column shaft
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(x, 0, 48, h);
+      ctx.fillStyle = '#92400e';
+      ctx.fillRect(x + 6, 0, 8, h);
+      ctx.fillRect(x + 34, 0, 8, h);
+
+      // Decorative colored painted bands
+      const bands = ['#1e3a8a', '#dc2626', '#15803d', '#facc15'];
+      for (let by = 90; by < h - 90; by += 85) {
+        ctx.fillStyle = bands[(by / 85) % bands.length];
+        ctx.fillRect(x, by, 48, 14);
+      }
+
+      // Lotus capital top
+      ctx.fillStyle = '#b45309';
+      ctx.beginPath();
+      ctx.moveTo(x - 14, 0);
+      ctx.lineTo(x + 62, 0);
+      ctx.lineTo(x + 48, 45);
+      ctx.lineTo(x, 45);
+      ctx.fill();
+    }
+
+    // Hieroglyphic frieze banner along upper wall
+    ctx.fillStyle = '#1c1917';
+    ctx.fillRect(0, 50, w, 40);
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(0, 50, w, 4);
+    ctx.fillRect(0, 86, w, 4);
+
+    // Carved hieroglyphic symbols
+    const glyphs = ['𓋹', '𓊽', '𓂀', '𓃭', '𓁹', '𓅃', '𓆣', '𓈖', '𓇳', '𓏏'];
+    ctx.font = '22px serif';
+    ctx.fillStyle = '#fde047';
+    for (let gx = 25; gx < w; gx += 45) {
+      const g = glyphs[(gx / 45) % glyphs.length];
+      ctx.fillText(g, gx, 78);
+    }
+
+    // Golden Royal Sarcophagus Shrine Silhouette
+    const sarcX = w * 0.48;
+    const sarcY = h * 0.38;
+    const sarcW = 100;
+    const sarcH = 200;
+
+    // Sarcophagus gold body
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(sarcX - sarcW / 2, sarcY, sarcW, sarcH);
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(sarcX - sarcW / 2, sarcY, sarcW, sarcH);
+
+    // Nemes Headdress stripes & Death Mask
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(sarcX, sarcY + 45, 32, 0, Math.PI * 2);
+    ctx.fill();
+    // Blue headdress stripes
+    ctx.fillStyle = '#1e40af';
+    for (let sy = sarcY + 20; sy < sarcY + 70; sy += 12) {
+      ctx.fillRect(sarcX - 28, sy, 56, 5);
+    }
+    // Crossed Crook and Flail
+    ctx.strokeStyle = '#fef08a';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(sarcX - 24, sarcY + 110);
+    ctx.lineTo(sarcX + 24, sarcY + 80);
+    ctx.moveTo(sarcX + 24, sarcY + 110);
+    ctx.lineTo(sarcX - 24, sarcY + 80);
+    ctx.stroke();
+
+    // Wall-mounted flaming sconce torches with ambient glow
+    const torches = [w * 0.22, w * 0.78];
+    torches.forEach(tx => {
+      const ty = h * 0.42;
+      // Ambient radial warm glow
+      const glow = ctx.createRadialGradient(tx, ty, 10, tx, ty, 90);
+      glow.addColorStop(0, 'rgba(251, 191, 36, 0.45)');
+      glow.addColorStop(1, 'rgba(251, 191, 36, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(tx, ty, 90, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bronze sconce bracket
+      ctx.fillStyle = '#78350f';
+      ctx.fillRect(tx - 6, ty, 12, 35);
+      ctx.fillRect(tx - 14, ty, 28, 8);
+
+      // Flickering flame tongues
+      ctx.fillStyle = '#ea580c';
+      ctx.beginPath();
+      ctx.arc(tx, ty - 8, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(tx, ty - 12, 7, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Scattered glittering gold coins & gems across the floor
+    const gemColors = ['#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#ec4899'];
+    for (let c = 0; c < 90; c++) {
+      const cx = this.rnd() * w;
+      const cy = h - 35 + this.rnd() * 30;
+      ctx.fillStyle = (c % 2 === 0) ? '#fde047' : gemColors[c % gemColors.length];
+      ctx.beginPath();
+      ctx.arc(cx, cy, 3 + this.rnd() * 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    this.addMicroTexture(ctx, w, h, 0.05);
+  }
+
+  /* -------------------------------------------------------------
+     PROCEDURAL BACKGROUND 15: MYSTIC MUSHROOM HOLLOW
+     ------------------------------------------------------------- */
+  drawMysticHollow(ctx, w, h) {
+    // Deep enchanted twilight atmosphere
+    const twilight = ctx.createLinearGradient(0, 0, 0, h);
+    twilight.addColorStop(0, '#090518');
+    twilight.addColorStop(0.5, '#170c38');
+    twilight.addColorStop(0.85, '#261247');
+    twilight.addColorStop(1, '#0d0722');
+    ctx.fillStyle = twilight;
+    ctx.fillRect(0, 0, w, h);
+
+    // Gnarled ancient hollow trees in background
+    for (let t = 0; t < 7; t++) {
+      const tx = t * (w / 6) + (Math.sin(t * 4) * 20);
+      const tw = 28 + (t % 3) * 12;
+      ctx.fillStyle = '#1c102c';
+      ctx.fillRect(tx, 0, tw, h);
+
+      // Luminescent tree moss
+      ctx.fillStyle = '#06b6d4';
+      for (let my = 60; my < h - 80; my += 50) {
+        ctx.beginPath();
+        ctx.ellipse(tx + tw / 2, my, tw * 0.6, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Giant Bioluminescent Fantasy Mushrooms
+    const shrooms = [
+      { x: w * 0.14, y: h * 0.58, capW: 90, capH: 60, col: '#06b6d4', dots: '#cffafe' },
+      { x: w * 0.35, y: h * 0.65, capW: 75, capH: 50, col: '#c084fc', dots: '#f3e8ff' },
+      { x: w * 0.58, y: h * 0.52, capW: 110, capH: 75, col: '#84cc16', dots: '#ecfccb' },
+      { x: w * 0.82, y: h * 0.62, capW: 95, capH: 62, col: '#f43f5e', dots: '#ffe4e6' },
+      { x: w * 0.94, y: h * 0.7, capW: 65, capH: 45, col: '#38bdf8', dots: '#e0f2fe' }
+    ];
+
+    shrooms.forEach(sh => {
+      // Mushroom Stalk
+      const stalkH = h - sh.y;
+      ctx.fillStyle = '#332354';
+      ctx.fillRect(sh.x - 12, sh.y, 24, stalkH);
+      ctx.strokeStyle = '#5b3e8a';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(sh.x - 12, sh.y, 24, stalkH);
+
+      // Ambient spore glow halo
+      const glow = ctx.createRadialGradient(sh.x, sh.y, 10, sh.x, sh.y, sh.capW * 0.9);
+      glow.addColorStop(0, sh.col);
+      glow.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(sh.x, sh.y, sh.capW * 0.9, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Glowing Mushroom Cap
+      ctx.fillStyle = sh.col;
+      ctx.beginPath();
+      ctx.ellipse(sh.x, sh.y, sh.capW, sh.capH, 0, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      // Gills under cap
+      ctx.fillStyle = '#201338';
+      ctx.beginPath();
+      ctx.ellipse(sh.x, sh.y, sh.capW, 14, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Glowing Polka Dots
+      ctx.fillStyle = sh.dots;
+      const dotCoords = [
+        { dx: 0, dy: -sh.capH * 0.6, r: 8 },
+        { dx: -sh.capW * 0.45, dy: -sh.capH * 0.35, r: 6 },
+        { dx: sh.capW * 0.45, dy: -sh.capH * 0.35, r: 6 },
+        { dx: -sh.capW * 0.2, dy: -sh.capH * 0.7, r: 7 },
+        { dx: sh.capW * 0.2, dy: -sh.capH * 0.7, r: 7 }
+      ];
+      dotCoords.forEach(d => {
+        ctx.beginPath();
+        ctx.arc(sh.x + d.dx, sh.y + d.dy, d.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    });
+
+    // Floating fairy spore motes drifting through the air
+    const sporeColors = ['#67e8f9', '#c084fc', '#a3e635', '#fda4af', '#fef08a'];
+    for (let m = 0; m < 95; m++) {
+      const mx = this.rnd() * w;
+      const my = this.rnd() * (h * 0.85);
+      const mr = 2 + this.rnd() * 4.5;
+      ctx.fillStyle = sporeColors[m % sporeColors.length];
+      ctx.beginPath();
+      ctx.arc(mx, my, mr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Mossy ground bank
+    ctx.fillStyle = '#160a2b';
+    ctx.fillRect(0, h - 45, w, 45);
+    ctx.fillStyle = '#10b981';
+    for (let gx = 0; gx < w; gx += 20) {
+      ctx.beginPath();
+      ctx.arc(gx + 10, h - 40, 10, Math.PI, Math.PI * 2);
+      ctx.fill();
+    }
+
+    this.addMicroTexture(ctx, w, h, 0.04);
+  }
+
+  /* -------------------------------------------------------------
+     PROCEDURAL BACKGROUND 16: SUNKEN ATLANTIS
+     ------------------------------------------------------------- */
+  drawSunkenAtlantis(ctx, w, h) {
+    // Deep abyssal ocean gradient
+    const sea = ctx.createLinearGradient(0, 0, 0, h);
+    sea.addColorStop(0, '#021824');
+    sea.addColorStop(0.4, '#043445');
+    sea.addColorStop(0.75, '#06505e');
+    sea.addColorStop(1, '#022129');
+    ctx.fillStyle = sea;
+    ctx.fillRect(0, 0, w, h);
+
+    // Caustic sunlight rays filtering from surface
+    ctx.fillStyle = 'rgba(103, 232, 249, 0.07)';
+    for (let r = 0; r < 7; r++) {
+      const rx = (r * 180 + 40) % w;
+      ctx.beginPath();
+      ctx.moveTo(rx, 0);
+      ctx.lineTo(rx + 60, 0);
+      ctx.lineTo(rx + 160, h);
+      ctx.lineTo(rx + 40, h);
+      ctx.fill();
+    }
+
+    // Classical Sunken Atlantean Marble Ruins & Fluted Columns
+    for (let c = 0; c < 7; c++) {
+      const cx = c * 180 + 35;
+      const isBroken = (c % 2 === 1);
+      const ch = isBroken ? (h * 0.45) : (h * 0.78);
+      const cy = h - ch;
+      const cw = 42;
+
+      // Marble column shaft
+      ctx.fillStyle = '#cbd5e1';
+      ctx.fillRect(cx, cy, cw, ch);
+      // Flutes
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(cx + 6, cy, 6, ch);
+      ctx.fillRect(cx + 18, cy, 6, ch);
+      ctx.fillRect(cx + 30, cy, 6, ch);
+
+      // Column capital
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(cx - 10, cy - 14, cw + 20, 14);
+
+      // Sea barnacles & coral encrustation
+      ctx.fillStyle = '#f43f5e';
+      ctx.beginPath();
+      ctx.arc(cx + cw / 2, cy + ch * 0.6, 12, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Swaying Emerald & Jade Kelp Ribbons
+    for (let k = 0; k < 26; k++) {
+      const kx = (k * 48 + 15) % w;
+      const kh = 140 + (k % 5) * 45;
+      ctx.strokeStyle = (k % 2 === 0) ? '#059669' : '#10b981';
+      ctx.lineWidth = 6 + (k % 3) * 3;
+      ctx.beginPath();
+      ctx.moveTo(kx, h);
+      ctx.bezierCurveTo(kx + 35, h - kh * 0.35, kx - 35, h - kh * 0.7, kx + 15, h - kh);
+      ctx.stroke();
+    }
+
+    // Luminous Drifting Jellyfish
+    const jellies = [
+      { x: w * 0.22, y: h * 0.38, r: 28, col: '#f472b6' },
+      { x: w * 0.52, y: h * 0.25, r: 35, col: '#38bdf8' },
+      { x: w * 0.8, y: h * 0.42, r: 30, col: '#c084fc' }
+    ];
+
+    jellies.forEach(j => {
+      // Bell dome
+      ctx.fillStyle = j.col;
+      ctx.beginPath();
+      ctx.arc(j.x, j.y, j.r, Math.PI, Math.PI * 2);
+      ctx.fill();
+      // Translucent skirt
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.beginPath();
+      ctx.arc(j.x, j.y, j.r * 0.8, Math.PI, Math.PI * 2);
+      ctx.fill();
+      // Flowing tentacles
+      ctx.strokeStyle = j.col;
+      ctx.lineWidth = 2;
+      for (let t = -3; t <= 3; t++) {
+        const tx = j.x + t * 6;
+        ctx.beginPath();
+        ctx.moveTo(tx, j.y);
+        ctx.bezierCurveTo(tx + 8, j.y + 25, tx - 8, j.y + 45, tx + 4, j.y + 65);
+        ctx.stroke();
+      }
+    });
+
+    // School of Tropical Reef Fish
+    const fishColors = ['#facc15', '#f97316', '#3b82f6'];
+    for (let f = 0; f < 18; f++) {
+      const fx = (f * 65 + 40) % (w - 60);
+      const fy = h * 0.3 + (f % 6) * 30;
+      ctx.fillStyle = fishColors[f % fishColors.length];
+      ctx.beginPath();
+      ctx.ellipse(fx, fy, 12, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Tail
+      ctx.beginPath();
+      ctx.moveTo(fx - 10, fy);
+      ctx.lineTo(fx - 18, fy - 6);
+      ctx.lineTo(fx - 18, fy + 6);
+      ctx.fill();
+    }
+
+    // Rising Pearlescent Oxygen Bubbles
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.lineWidth = 1.5;
+    for (let b = 0; b < 65; b++) {
+      const bx = this.rnd() * w;
+      const by = this.rnd() * h;
+      const br = 2.5 + this.rnd() * 6;
+      ctx.beginPath();
+      ctx.arc(bx, by, br, 0, Math.PI * 2);
+      ctx.stroke();
+      // Specular shine
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(bx - br * 0.3, by - br * 0.3, br * 0.25, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    this.addMicroTexture(ctx, w, h, 0.04);
+  }
+
+  /* -------------------------------------------------------------
+     PROCEDURAL BACKGROUND 17: ZEN BAMBOO GARDEN
+     ------------------------------------------------------------- */
+  drawZenGarden(ctx, w, h) {
+    // Dusk twilight sunset sky
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, '#130d24');
+    sky.addColorStop(0.35, '#3b123d');
+    sky.addColorStop(0.7, '#6b1c41');
+    sky.addColorStop(1, '#9f2244');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h);
+
+    // Glowing Twilight Crimson/Harvest Moon
+    const mx = w * 0.76;
+    const my = h * 0.26;
+    const mr = 52;
+    const moonGlow = ctx.createRadialGradient(mx, my, mr * 0.8, mx, my, mr * 1.5);
+    moonGlow.addColorStop(0, 'rgba(253, 224, 71, 0.5)');
+    moonGlow.addColorStop(1, 'rgba(253, 224, 71, 0)');
+    ctx.fillStyle = moonGlow;
+    ctx.beginPath();
+    ctx.arc(mx, my, mr * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fef08a';
+    ctx.beginPath();
+    ctx.arc(mx, my, mr, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Distant Temple Pagoda Silhouette
+    const pagX = w * 0.72;
+    const pagY = h * 0.35;
+    ctx.fillStyle = '#180a1c';
+    // 3 tiers of upturned pagoda roofs
+    for (let r = 0; r < 3; r++) {
+      const rw = 95 - r * 18;
+      const ry = pagY + r * 38;
+      ctx.beginPath();
+      ctx.moveTo(pagX - rw / 2 - 14, ry + 12);
+      ctx.quadraticCurveTo(pagX, ry - 4, pagX + rw / 2 + 14, ry + 12);
+      ctx.lineTo(pagX + rw / 2, ry + 18);
+      ctx.lineTo(pagX - rw / 2, ry + 18);
+      ctx.fill();
+      ctx.fillRect(pagX - rw * 0.35, ry + 18, rw * 0.7, 20);
+    }
+
+    // Tall Green Bamboo Forest Grove
+    for (let b = 0; b < 28; b++) {
+      const bx = (b * 44) % w + (Math.sin(b * 3) * 10);
+      const bw = 12 + (b % 3) * 4;
+      // Bamboo stalk
+      ctx.fillStyle = (b % 2 === 0) ? '#166534' : '#15803d';
+      ctx.fillRect(bx, 0, bw, h);
+
+      // Internode rings
+      ctx.fillStyle = '#86efac';
+      for (let ny = 40; ny < h; ny += 65) {
+        ctx.fillRect(bx - 2, ny, bw + 4, 3);
+      }
+
+      // Bamboo leaves
+      ctx.fillStyle = '#22c55e';
+      for (let ly = 60; ly < h - 100; ly += 75) {
+        ctx.beginPath();
+        ctx.ellipse(bx + bw + 12, ly, 18, 5, 0.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Weeping Cherry Blossom (Sakura) Branches
+    const branchX = w * 0.15;
+    ctx.strokeStyle = '#291811';
+    ctx.lineWidth = 14;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(w * 0.1, 40, w * 0.2, 70, branchX + 160, 110);
+    ctx.stroke();
+
+    // Cherry blossom pink flowers & floating petals
+    const sakuraColors = ['#fbcfe8', '#f472b6', '#fda4af', '#fecdd3', '#ffffff'];
+    for (let f = 0; f < 180; f++) {
+      const fx = (f < 100) ? (this.rnd() * (w * 0.45)) : (this.rnd() * w);
+      const fy = (f < 100) ? (this.rnd() * (h * 0.45)) : (this.rnd() * h);
+      ctx.fillStyle = sakuraColors[f % sakuraColors.length];
+      ctx.beginPath();
+      ctx.arc(fx, fy, 4 + this.rnd() * 5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Carved Japanese Stone Toro Lantern
+    const lx = w * 0.35;
+    const ly = h - 130;
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(lx - 8, ly + 50, 16, 40); // post
+    ctx.fillRect(lx - 20, ly + 36, 40, 14); // base
+    ctx.fillStyle = '#fef08a'; // glowing fire chamber
+    ctx.fillRect(lx - 15, ly + 14, 30, 22);
+    ctx.fillStyle = '#334155'; // lantern roof
+    ctx.beginPath();
+    ctx.moveTo(lx - 28, ly + 14);
+    ctx.lineTo(lx, ly - 8);
+    ctx.lineTo(lx + 28, ly + 14);
+    ctx.fill();
+
+    // Raked Zen Sand Ripples Floor
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(0, h - 45, w, 45);
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 2;
+    for (let sy = h - 38; sy < h - 5; sy += 10) {
+      ctx.beginPath();
+      ctx.moveTo(0, sy);
+      ctx.lineTo(w, sy);
+      ctx.stroke();
+    }
+
+    this.addMicroTexture(ctx, w, h, 0.04);
+  }
+
+  /* -------------------------------------------------------------
+     PROCEDURAL BACKGROUND 18: STEAMPUNK WORKSHOP
+     ------------------------------------------------------------- */
+  drawSteampunkWorkshop(ctx, w, h) {
+    // Victorian boiler iron plates background
+    ctx.fillStyle = '#1c1917';
+    ctx.fillRect(0, 0, w, h);
+
+    // Riveted iron panels
+    const panelW = 160;
+    const panelH = 120;
+    for (let y = 0; y < h; y += panelH) {
+      for (let x = 0; x < w; x += panelW) {
+        ctx.strokeStyle = '#292524';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, panelW, panelH);
+        // Screws / rivets on corners
+        ctx.fillStyle = '#78716c';
+        ctx.beginPath();
+        ctx.arc(x + 8, y + 8, 3, 0, Math.PI * 2);
+        ctx.arc(x + panelW - 8, y + 8, 3, 0, Math.PI * 2);
+        ctx.arc(x + 8, y + panelH - 8, 3, 0, Math.PI * 2);
+        ctx.arc(x + panelW - 8, y + panelH - 8, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Interlocking Mechanical Brass & Bronze Cogs
+    const gears = [
+      { x: w * 0.18, y: h * 0.35, r: 65, teeth: 16, col: '#d97706' },
+      { x: w * 0.18 + 105, y: h * 0.35 - 30, r: 45, teeth: 12, col: '#b45309' },
+      { x: w * 0.52, y: h * 0.28, r: 75, teeth: 18, col: '#ca8a04' },
+      { x: w * 0.52 + 105, y: h * 0.28 + 40, r: 50, teeth: 14, col: '#d97706' },
+      { x: w * 0.84, y: h * 0.42, r: 80, teeth: 20, col: '#b45309' },
+      { x: w * 0.84 - 100, y: h * 0.42 - 50, r: 42, teeth: 12, col: '#f59e0b' }
+    ];
+
+    gears.forEach(g => {
+      // Gear Teeth
+      ctx.fillStyle = g.col;
+      for (let t = 0; t < g.teeth; t++) {
+        const angle = (t / g.teeth) * Math.PI * 2;
+        const tx = g.x + Math.cos(angle) * (g.r + 8);
+        const ty = g.y + Math.sin(angle) * (g.r + 8);
+        ctx.save();
+        ctx.translate(tx, ty);
+        ctx.rotate(angle);
+        ctx.fillRect(-6, -6, 12, 12);
+        ctx.restore();
+      }
+
+      // Outer gear circle
+      ctx.beginPath();
+      ctx.arc(g.x, g.y, g.r, 0, Math.PI * 2);
+      ctx.fillStyle = g.col;
+      ctx.fill();
+      ctx.strokeStyle = '#451a03';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Inner spoke cutouts
+      ctx.fillStyle = '#1c1917';
+      for (let s = 0; s < 4; s++) {
+        const sAngle = (s / 4) * Math.PI * 2;
+        const sx = g.x + Math.cos(sAngle) * (g.r * 0.5);
+        const sy = g.y + Math.sin(sAngle) * (g.r * 0.5);
+        ctx.beginPath();
+        ctx.arc(sx, sy, g.r * 0.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Central brass hub & bolt
+      ctx.fillStyle = '#fef08a';
+      ctx.beginPath();
+      ctx.arc(g.x, g.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Copper & Brass Industrial Pipe Network
+    ctx.strokeStyle = '#ca8a04';
+    ctx.lineWidth = 16;
+    // Main horizontal steam trunk
+    ctx.beginPath();
+    ctx.moveTo(0, h * 0.72);
+    ctx.lineTo(w, h * 0.72);
+    ctx.stroke();
+    // Vertical feeder branches
+    ctx.beginPath();
+    ctx.moveTo(w * 0.35, 0);
+    ctx.lineTo(w * 0.35, h * 0.72);
+    ctx.moveTo(w * 0.7, 0);
+    ctx.lineTo(w * 0.7, h * 0.72);
+    ctx.stroke();
+
+    // Pipe joints & flanges
+    ctx.fillStyle = '#78350f';
+    for (let px = 60; px < w; px += 180) {
+      ctx.fillRect(px, h * 0.72 - 12, 12, 24);
+    }
+
+    // Red Valve Wheel
+    ctx.fillStyle = '#dc2626';
+    ctx.beginPath();
+    ctx.arc(w * 0.35, h * 0.72 - 30, 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#7f1d1d';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Brass Steam Pressure Manometer Dials
+    const gauges = [w * 0.35 - 70, w * 0.7 + 60];
+    gauges.forEach(gx => {
+      const gy = h * 0.72 - 50;
+      // Outer brass ring
+      ctx.fillStyle = '#d97706';
+      ctx.beginPath();
+      ctx.arc(gx, gy, 28, 0, Math.PI * 2);
+      ctx.fill();
+      // White dial face
+      ctx.fillStyle = '#fefce8';
+      ctx.beginPath();
+      ctx.arc(gx, gy, 22, 0, Math.PI * 2);
+      ctx.fill();
+      // Gauge markings & red needle
+      ctx.strokeStyle = '#dc2626';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(gx, gy);
+      ctx.lineTo(gx + 12, gy - 12);
+      ctx.stroke();
+    });
+
+    // Steel Diamond-Tread Grating Floor
+    ctx.fillStyle = '#292524';
+    ctx.fillRect(0, h - 55, w, 55);
+    ctx.strokeStyle = '#44403c';
+    ctx.lineWidth = 2;
+    for (let fx = -50; fx < w + 50; fx += 25) {
+      ctx.beginPath();
+      ctx.moveTo(fx, h - 55);
+      ctx.lineTo(fx + 30, h);
+      ctx.stroke();
+    }
+
+    this.addMicroTexture(ctx, w, h, 0.05);
+  }
+
+  /* -------------------------------------------------------------
+     PROCEDURAL BACKGROUND 19: HAUNTED GOTHIC CASTLE
+     ------------------------------------------------------------- */
+  drawHauntedCastle(ctx, w, h) {
+    // Midnight purple stone chamber
+    const hall = ctx.createLinearGradient(0, 0, 0, h);
+    hall.addColorStop(0, '#0c0714');
+    hall.addColorStop(0.5, '#160d26');
+    hall.addColorStop(1, '#0b0612');
+    ctx.fillStyle = hall;
+    ctx.fillRect(0, 0, w, h);
+
+    // Weathered gothic stone brick masonry
+    for (let y = 0; y < h; y += 30) {
+      const offset = (Math.floor(y / 30) % 2) * 35;
+      for (let x = -70; x < w + 70; x += 70) {
+        ctx.strokeStyle = '#1e1430';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + offset, y, 70, 30);
+      }
+    }
+
+    // Grand Gothic Pointed-Arch Stained Glass Windows
+    const winWidth = 90;
+    const winHeight = 220;
+    const winPositions = [w * 0.2, w * 0.5, w * 0.8];
+
+    winPositions.forEach(wx => {
+      const wy = 50;
+      // Pointed arch window frame
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(wx - winWidth / 2, wy + winHeight);
+      ctx.lineTo(wx - winWidth / 2, wy + winHeight * 0.35);
+      ctx.quadraticCurveTo(wx, wy - 20, wx + winWidth / 2, wy + winHeight * 0.35);
+      ctx.lineTo(wx + winWidth / 2, wy + winHeight);
+      ctx.closePath();
+      ctx.clip();
+
+      // Stained glass multi-colored panels
+      const glassColors = [
+        '#1d4ed8', '#b91c1c', '#7c3aed', '#047857',
+        '#d97706', '#0284c7', '#be123c', '#4338ca'
+      ];
+      const rows = 7;
+      const cols = 4;
+      const cw = winWidth / cols;
+      const ch = winHeight / rows;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          ctx.fillStyle = glassColors[(r * cols + c) % glassColors.length];
+          ctx.fillRect(wx - winWidth / 2 + c * cw, wy + r * ch, cw, ch);
+          ctx.strokeStyle = '#05020a';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(wx - winWidth / 2 + c * cw, wy + r * ch, cw, ch);
+        }
+      }
+
+      ctx.restore();
+
+      // Stone window trim border
+      ctx.strokeStyle = '#382b4d';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(wx - winWidth / 2, wy + winHeight);
+      ctx.lineTo(wx - winWidth / 2, wy + winHeight * 0.35);
+      ctx.quadraticCurveTo(wx, wy - 20, wx + winWidth / 2, wy + winHeight * 0.35);
+      ctx.lineTo(wx + winWidth / 2, wy + winHeight);
+      ctx.stroke();
+    });
+
+    // Hanging Wrought Iron Candelabra Chandeliers
+    const chandeliers = [w * 0.35, w * 0.65];
+    chandeliers.forEach(cx => {
+      // Chain
+      ctx.strokeStyle = '#374151';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cx, 0);
+      ctx.lineTo(cx, 130);
+      ctx.stroke();
+
+      // Iron Ring Bar
+      ctx.fillStyle = '#18181b';
+      ctx.fillRect(cx - 45, 130, 90, 8);
+
+      // Candles with eerie green/violet flames
+      for (let c = -2; c <= 2; c++) {
+        const canX = cx + c * 18;
+        // White wax stick
+        ctx.fillStyle = '#f1f5f9';
+        ctx.fillRect(canX - 3, 114, 6, 16);
+        // Ghostly flame
+        ctx.fillStyle = (c % 2 === 0) ? '#4ade80' : '#c084fc';
+        ctx.beginPath();
+        ctx.ellipse(canX, 106, 4, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    // Stone Gargoyle silhouettes perched on corbels
+    const gargoyles = [{ x: 45, y: h * 0.5 }, { x: w - 45, y: h * 0.5 }];
+    gargoyles.forEach(g => {
+      ctx.fillStyle = '#1e1b2e';
+      ctx.beginPath();
+      ctx.arc(g.x, g.y, 22, 0, Math.PI * 2);
+      ctx.fill();
+      // Glowing eerie yellow eyes
+      ctx.fillStyle = '#facc15';
+      ctx.beginPath();
+      ctx.arc(g.x - 5, g.y - 3, 3, 0, Math.PI * 2);
+      ctx.arc(g.x + 5, g.y - 3, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // Cobwebs in upper corners
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+    ctx.lineWidth = 1;
+    for (let r = 20; r <= 80; r += 20) {
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 0.5);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(w, 0, r, Math.PI * 0.5, Math.PI);
+      ctx.stroke();
+    }
+
+    // Checkered gothic floor with creeping mist
+    ctx.fillStyle = '#090510';
+    ctx.fillRect(0, h - 50, w, 50);
+    const tileW = 45;
+    for (let tx = 0; tx < w; tx += tileW) {
+      ctx.fillStyle = ((tx / tileW) % 2 === 0) ? '#211833' : '#0e0917';
+      ctx.fillRect(tx, h - 50, tileW, 50);
+    }
+
+    // Spooky fog clouds along the floor
+    ctx.fillStyle = 'rgba(168, 85, 247, 0.15)';
+    for (let i = 0; i < 9; i++) {
+      ctx.beginPath();
+      ctx.arc(i * 140 + 30, h - 30, 60, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    this.addMicroTexture(ctx, w, h, 0.05);
+  }
+
+  /* -------------------------------------------------------------
+     PROCEDURAL BACKGROUND 20: DIGITAL CYBER MATRIX
+     ------------------------------------------------------------- */
+  drawCyberMatrix(ctx, w, h) {
+    // Deep terminal phosphor CRT black/green backdrop
+    const crt = ctx.createLinearGradient(0, 0, 0, h);
+    crt.addColorStop(0, '#010804');
+    crt.addColorStop(0.5, '#021609');
+    crt.addColorStop(1, '#010f06');
+    ctx.fillStyle = crt;
+    ctx.fillRect(0, 0, w, h);
+
+    // 3D Perspective Wireframe Horizon Grid
+    const horizonY = h * 0.52;
+    ctx.strokeStyle = 'rgba(0, 255, 102, 0.35)';
+    ctx.lineWidth = 1.5;
+
+    // Horizontal receding lines
+    for (let y = horizonY; y < h; y += (y - horizonY) * 0.45 + 8) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+    // Perspective vanishing lines
+    const vanishX = w * 0.5;
+    for (let x = -w * 0.5; x < w * 1.5; x += 65) {
+      ctx.beginPath();
+      ctx.moveTo(vanishX, horizonY);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+
+    // Cascading Digital Code Rain (36 columns)
+    const codeGlyphs = '0123456789ABCDEFｦｱｳｴｵｶｷｹｺｻｼｽｾｿﾀﾂﾃﾅﾆﾇﾈﾊﾋﾎﾏﾐﾑﾒﾓﾔﾕﾗﾘﾜ';
+    const colSpacing = w / 36;
+    for (let col = 0; col < 36; col++) {
+      const cx = col * colSpacing + 6;
+      const headY = (col * 37 + (this.rnd() * h)) % h;
+      const trailLen = 10 + (col % 8) * 3;
+
+      for (let r = 0; r < trailLen; r++) {
+        const gy = headY - r * 16;
+        if (gy < 0 || gy > h) continue;
+
+        const glyph = codeGlyphs[(col * 7 + r * 5) % codeGlyphs.length];
+        if (r === 0) {
+          // Bright white leading head
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 15px monospace';
+        } else if (r < 4) {
+          // Vivid neon green
+          ctx.fillStyle = '#00ff66';
+          ctx.font = '14px monospace';
+        } else {
+          // Fading deep green tail
+          const alpha = 1 - (r / trailLen);
+          ctx.fillStyle = `rgba(34, 197, 94, ${alpha * 0.8})`;
+          ctx.font = '13px monospace';
+        }
+        ctx.fillText(glyph, cx, gy);
+      }
+    }
+
+    // Holographic Isometric Data Cubes
+    const cubes = [
+      { x: w * 0.25, y: h * 0.32, size: 36 },
+      { x: w * 0.75, y: h * 0.28, size: 44 }
+    ];
+
+    cubes.forEach(cb => {
+      ctx.strokeStyle = '#00f0ff';
+      ctx.lineWidth = 2;
+      // Front square
+      ctx.strokeRect(cb.x - cb.size / 2, cb.y - cb.size / 2, cb.size, cb.size);
+      // Back square & connecting edges
+      ctx.strokeRect(cb.x - cb.size / 2 + 14, cb.y - cb.size / 2 - 14, cb.size, cb.size);
+      ctx.beginPath();
+      ctx.moveTo(cb.x - cb.size / 2, cb.y - cb.size / 2);
+      ctx.lineTo(cb.x - cb.size / 2 + 14, cb.y - cb.size / 2 - 14);
+      ctx.moveTo(cb.x + cb.size / 2, cb.y - cb.size / 2);
+      ctx.lineTo(cb.x + cb.size / 2 + 14, cb.y - cb.size / 2 - 14);
+      ctx.moveTo(cb.x - cb.size / 2, cb.y + cb.size / 2);
+      ctx.lineTo(cb.x - cb.size / 2 + 14, cb.y + cb.size / 2 - 14);
+      ctx.moveTo(cb.x + cb.size / 2, cb.y + cb.size / 2);
+      ctx.lineTo(cb.x + cb.size / 2 + 14, cb.y + cb.size / 2 - 14);
+      ctx.stroke();
+    });
+
+    // High-Tech Server Racks on flanks with blinking LED arrays
+    const rackW = 75;
+    const racks = [0, w - rackW];
+    racks.forEach(rx => {
+      ctx.fillStyle = '#061a10';
+      ctx.fillRect(rx, 0, rackW, h);
+      ctx.strokeStyle = '#00ff66';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(rx, 0, rackW, h);
+
+      // Server blades & LED arrays
+      const ledCols = ['#22c55e', '#00f0ff', '#eab308', '#ef4444'];
+      for (let sy = 30; sy < h - 40; sy += 38) {
+        ctx.fillStyle = '#031008';
+        ctx.fillRect(rx + 4, sy, rackW - 8, 30);
+        for (let l = 0; l < 4; l++) {
+          ctx.fillStyle = ledCols[(sy + l) % ledCols.length];
+          ctx.beginPath();
+          ctx.arc(rx + 16 + l * 14, sy + 15, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    });
+
+    this.addMicroTexture(ctx, w, h, 0.05);
   }
 }
 

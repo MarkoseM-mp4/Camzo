@@ -244,7 +244,19 @@ html, body {
   justify-content: center;
 }
 
+/* Canvas Stage Wrapper for Zoom & Pan */
+.canvas-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
 /* Canvas layers stacked with 16:9 proportion fitted to container */
+.canvas-stage canvas,
 .canvas-container canvas {
   position: absolute;
   top: 50%;
@@ -264,6 +276,50 @@ html, body {
 #paint-canvas { z-index: 1; opacity: 0; pointer-events: none; }
 #vision-canvas { z-index: 40; pointer-events: none; }
 #fx-canvas { z-index: 50; pointer-events: none; }
+
+/* Dynamic Zoom Level HUD Badge */
+.canvas-zoom-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 105;
+  background: rgba(10, 14, 24, 0.88);
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  backdrop-filter: blur(8px);
+  padding: 6px 14px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cyan-accent);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+  user-select: none;
+}
+
+.canvas-zoom-badge:hover {
+  background: rgba(0, 240, 255, 0.18);
+  border-color: var(--cyan-accent);
+  transform: scale(1.06);
+}
+
+.canvas-zoom-badge .zoom-reset-btn {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  color: #ffffff;
+  transition: background 0.15s;
+}
+
+.canvas-zoom-badge:hover .zoom-reset-btn {
+  background: var(--cyan-accent);
+  color: #03150b;
+}
 
 
 /* Dynamic Circular Brush Indicator */

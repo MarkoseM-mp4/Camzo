@@ -256,10 +256,14 @@ class Game {
       }
     };
 
-    // Hunter clicks to investigate (Online multiplayer server validation)
-    this.hunterVision.customInvestigateHandler = (x, y) => {
-      if (this.isOnline && this.myOnlineRole === 'hunter') {
-        networkManager.sendHunterInvestigate(x, y);
+    // Hunter clicks to investigate (Online multiplayer server validation vs local investigation)
+    this.hunterVision.customInvestigateHandler = (x, y, clientX, clientY) => {
+      if (this.isOnline) {
+        if (this.myOnlineRole === 'hunter') {
+          networkManager.sendHunterInvestigate(x, y);
+        }
+      } else {
+        this.hunterVision.investigate(x, y, clientX, clientY);
       }
     };
   }

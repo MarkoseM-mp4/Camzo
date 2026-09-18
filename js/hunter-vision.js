@@ -167,6 +167,7 @@ export class HunterVision {
 
   // Trigger hit from network event
   triggerNetworkHit(x, y, hider) {
+    this.totalClicks++;
     this.hits++;
     if (hider) hider.found = true;
     sound.playHit();
@@ -177,6 +178,7 @@ export class HunterVision {
 
   // Trigger miss from network event
   triggerNetworkMiss(x, y, lives) {
+    this.totalClicks++;
     this.misses++;
     this.hunterLives = lives;
     sound.playMiss();

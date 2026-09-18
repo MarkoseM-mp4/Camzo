@@ -50,20 +50,62 @@ export class PaintEngine {
     this.brushSizeSliderEl = document.getElementById('brush-size-slider');
     this.paletteContainerEl = document.getElementById('palette-chips');
 
+    // Zoom & Pan Stage elements
+    this.stageEl = document.getElementById('canvas-stage');
+    this.zoomBadgeEl = document.getElementById('canvas-zoom-badge');
+    this.zoomTextEl = document.getElementById('canvas-zoom-text');
+
+    // Zoom & Pan state
+    this.zoom = 1.0;
+    this.panX = 0;
+    this.panY = 0;
+    this.isSpaceDown = false;
+    this.isPanning = false;
+    this.panStartX = 0;
+    this.panStartY = 0;
+
     this.initEvents();
     this.updatePaletteUI();
     this.saveState();
   }
 
+  // Apply CSS transform to the canvas stage
+  applyTransform() {
+    if (!this.stageEl) return;
+    this.stageEl.style.transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.zoom})`;
+
+    if (this.zoomBadgeEl && this.zoomTextEl) {
+      if (this.zoom > 1.01) {
+        this.zoomBadgeEl.classList.remove('hidden');
+        this.zoomTextEl.textContent = `${Math.round(this.zoom * 100)}%`;
+      } else {
+        this.zoomBadgeEl.classList.add('hidden');
+      }
+    }
+  }
+
+  // Reset zoom back to default full-view 1.0x
+  resetZoom() {
+    this.zoom = 1.0;
+    this.panX = 0;
+    this.panY = 0;
+    this.isPanning = false;
+    this.isSpaceDown = false;
+    if (this.container) this.container.style.cursor = '';
+    this.applyTransform();
+  }
+
   setEnabled(val) {
     this.enabled = val;
-    if (this.brushCursorEl) {
-      if (val) {
-        this.brushCursorEl.classList.remove('hidden');
-      } else {
-        this.brushCursorEl.classList.add('hidden');
-        if (this.loupeEl) this.loupeEl.classList.add('hidden');
-      }
+    if (!val) {
+      this.isPainting = false;
+      this.isPanning = false;
+      this.isSpaceDown = false;
+      this.resetZoom();
+      if (this.brushCursorEl) this.brushCursorEl.classList.add('hidden');
+      if (this.loupeEl) this.loupeEl.classList.add('hidden');
+    } else {
+      if (this.brushCursorEl) this.brushCursorEl.classList.remove('hidden');
     }
   }
 
@@ -107,9 +149,48 @@ export class PaintEngine {
       return false;
     });
 
-    // MOUSE DOWN: Paint or Color Pick
+    // Zoom Badge click to reset
+    if (this.zoomBadgeEl) {
+      this.zoomBadgeEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.resetZoom();
+      });
+    }
+
+    // Spacebar key tracking for pan navigation when zoomed in
+    window.addEventListener('keydown', (e) => {
+      if (!this.enabled) return;
+      if (e.code === 'Space' && !this.isSpaceDown && this.zoom > 1.01) {
+        if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+        e.preventDefault();
+        this.isSpaceDown = true;
+        this.container.style.cursor = 'grab';
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space') {
+        this.isSpaceDown = false;
+        if (!this.isPanning) {
+          this.container.style.cursor = '';
+        }
+      }
+    });
+
+    // MOUSE DOWN: Paint, Color Pick, or Pan
     this.container.addEventListener('mousedown', (e) => {
       if (!this.enabled) return;
+
+      // Pan with Space + Left Click OR Middle Click (button 1)
+      if ((this.isSpaceDown && e.button === 0) || e.button === 1) {
+        e.preventDefault();
+        this.isPanning = true;
+        this.panStartX = e.clientX - this.panX;
+        this.panStartY = e.clientY - this.panY;
+        this.container.style.cursor = 'grabbing';
+        return;
+      }
+
       const coords = this.getCanvasCoords(e);
 
       // RIGHT CLICK: Sample Color
@@ -134,13 +215,37 @@ export class PaintEngine {
       }
     });
 
-    // MOUSE MOVE: Continuous smooth ribbon painting
+    // MOUSE MOVE: Continuous smooth ribbon painting or panning
     window.addEventListener('mousemove', (e) => {
       if (!this.enabled) return;
-      // Use bgCanvas rect for bounds check — it's always rendered and correctly positioned
+
+      // Panning active
+      if (this.isPanning) {
+        this.panX = e.clientX - this.panStartX;
+        this.panY = e.clientY - this.panStartY;
+
+        const containerRect = this.container.getBoundingClientRect();
+        const minPanX = containerRect.width * (1 - this.zoom) - containerRect.width * 0.25;
+        const maxPanX = containerRect.width * 0.25;
+        const minPanY = containerRect.height * (1 - this.zoom) - containerRect.height * 0.25;
+        const maxPanY = containerRect.height * 0.25;
+
+        this.panX = Math.max(minPanX, Math.min(maxPanX, this.panX));
+        this.panY = Math.max(minPanY, Math.min(maxPanY, this.panY));
+
+        this.applyTransform();
+        return;
+      }
+
+      // Use bgCanvas rect for bounds check
       const rect = this.bgCanvas.getBoundingClientRect();
+      const containerRect = this.container.getBoundingClientRect();
       const inBounds = (
         rect.width > 0 &&
+        e.clientX >= containerRect.left &&
+        e.clientX <= containerRect.right &&
+        e.clientY >= containerRect.top &&
+        e.clientY <= containerRect.bottom &&
         e.clientX >= rect.left &&
         e.clientX <= rect.right &&
         e.clientY >= rect.top &&
@@ -174,8 +279,12 @@ export class PaintEngine {
       }
     });
 
-    // MOUSE UP: Finish stroke
+    // MOUSE UP: Finish stroke or panning
     window.addEventListener('mouseup', (e) => {
+      if (this.isPanning) {
+        this.isPanning = false;
+        this.container.style.cursor = this.isSpaceDown ? 'grab' : '';
+      }
       if (this.isPainting) {
         this.isPainting = false;
         this.lastX = null;
@@ -189,24 +298,71 @@ export class PaintEngine {
     });
 
     // MOUSE WHEEL:
-    //   Default          → Change brush SIZE
+    //   Shift + Scroll   → ZOOM into/out of canvas with mouse pointer as center!
     //   Ctrl + Scroll    → Change brush OPACITY
+    //   Default Scroll   → Change brush SIZE
     const handleWheel = (e) => {
       if (!this.enabled) return;
       e.preventDefault();
       e.stopPropagation();
 
+      const isShift = e.shiftKey;
       const isCtrl = e.ctrlKey || e.metaKey;
       const scrollUp = e.deltaY < 0;
+
+      if (isShift) {
+        // Shift + Scroll Wheel → ZOOM into canvas with mouse pointer as center
+        const containerRect = this.container.getBoundingClientRect();
+        const mouseX = e.clientX - containerRect.left;
+        const mouseY = e.clientY - containerRect.top;
+
+        // Stage coordinate currently under mouse cursor
+        const stageX = (mouseX - this.panX) / this.zoom;
+        const stageY = (mouseY - this.panY) / this.zoom;
+
+        // Zoom factor
+        const zoomStep = scrollUp ? 1.18 : (1 / 1.18);
+        let newZoom = this.zoom * zoomStep;
+
+        if (newZoom <= 1.05) {
+          // Snap back to normal 1x view
+          this.resetZoom();
+        } else {
+          newZoom = Math.min(6.0, newZoom);
+          this.zoom = newZoom;
+          this.panX = mouseX - stageX * newZoom;
+          this.panY = mouseY - stageY * newZoom;
+
+          // Pan bounds clamping (keep canvas within reasonable viewport reach)
+          const minPanX = containerRect.width * (1 - newZoom) - containerRect.width * 0.25;
+          const maxPanX = containerRect.width * 0.25;
+          const minPanY = containerRect.height * (1 - newZoom) - containerRect.height * 0.25;
+          const maxPanY = containerRect.height * 0.25;
+
+          this.panX = Math.max(minPanX, Math.min(maxPanX, this.panX));
+          this.panY = Math.max(minPanY, Math.min(maxPanY, this.panY));
+
+          this.applyTransform();
+        }
+
+        const coords = this.getCanvasCoords(e);
+        this.updateCursorIndicator(coords);
+        return;
+      }
 
       if (isCtrl) {
         // Ctrl+Scroll → adjust opacity in 5% steps
         const step = scrollUp ? 0.05 : -0.05;
         this.setBrushOpacity(this.brushOpacity + step);
       } else {
-        // Plain scroll → adjust brush size
-        const step = scrollUp ? 4 : -4;
-        this.setBrushSize(this.brushSize + step);
+        // Plain scroll → adjust brush size (fine 1px steps below 6px)
+        let delta;
+        if (scrollUp) {
+          delta = this.brushSize < 6 ? 1 : (this.brushSize < 16 ? 2 : 4);
+        } else {
+          delta = this.brushSize <= 6 ? -1 : (this.brushSize <= 16 ? -2 : -4);
+        }
+        this.setBrushSize(this.brushSize + delta);
       }
 
       const coords = this.getCanvasCoords(e);
@@ -255,7 +411,7 @@ export class PaintEngine {
 
   // Brush Sizing
   setBrushSize(newSize) {
-    this.brushSize = Math.max(6, Math.min(64, newSize));
+    this.brushSize = Math.max(1, Math.min(64, newSize));
     if (this.brushSizeDisplayEl) {
       this.brushSizeDisplayEl.textContent = `${this.brushSize}px`;
     }
@@ -402,12 +558,13 @@ export class PaintEngine {
         const t = i / steps;
         const cx = x1 + (x2 - x1) * t;
         const cy = y1 + (y2 - y1) * t;
-        const dots = Math.floor(this.brushSize * 0.7);
+        const dots = Math.max(1, Math.floor(this.brushSize * 0.7));
         for (let d = 0; d < dots; d++) {
           const r = Math.random() * this.brushSize;
           const a = Math.random() * Math.PI * 2;
+          const dotRadius = Math.max(0.5, Math.min(this.brushSize, 2 + Math.random() * 3));
           this.ctx.beginPath();
-          this.ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 2 + Math.random() * 3, 0, Math.PI * 2);
+          this.ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, dotRadius, 0, Math.PI * 2);
           this.ctx.fill();
         }
       }
@@ -415,7 +572,7 @@ export class PaintEngine {
       // Solid continuous stroke: round cap + round join path
       this.ctx.strokeStyle = this.currentColor;
       this.ctx.fillStyle = this.currentColor;
-      this.ctx.lineWidth = this.brushSize * 2;
+      this.ctx.lineWidth = Math.max(1, this.brushSize * 2);
       this.ctx.lineCap = 'round';
       this.ctx.lineJoin = 'round';
 
@@ -444,17 +601,18 @@ export class PaintEngine {
       this.ctx.arc(x, y, this.brushSize, 0, Math.PI * 2);
       this.ctx.fill();
     } else if (this.brushType === 'stipple') {
-      const dots = Math.floor(this.brushSize * 1.4);
+      const dots = Math.max(1, Math.floor(this.brushSize * 1.4));
       for (let d = 0; d < dots; d++) {
         const r = Math.random() * this.brushSize;
         const a = Math.random() * Math.PI * 2;
+        const dotRadius = Math.max(0.5, Math.min(this.brushSize, 2 + Math.random() * 3));
         this.ctx.beginPath();
-        this.ctx.arc(x + Math.cos(a) * r, y + Math.sin(a) * r, 2 + Math.random() * 3, 0, Math.PI * 2);
+        this.ctx.arc(x + Math.cos(a) * r, y + Math.sin(a) * r, dotRadius, 0, Math.PI * 2);
         this.ctx.fill();
       }
     } else {
       this.ctx.beginPath();
-      this.ctx.arc(x, y, this.brushSize, 0, Math.PI * 2);
+      this.ctx.arc(x, y, Math.max(0.5, this.brushSize), 0, Math.PI * 2);
       this.ctx.fill();
     }
 

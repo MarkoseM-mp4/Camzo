@@ -30,7 +30,17 @@ const PROCEDURAL_THEMES = [
   'procedural-graffiti',
   'procedural-candy',
   'procedural-circuit',
-  'procedural-autumn'
+  'procedural-autumn',
+  'procedural-volcano',
+  'procedural-space',
+  'procedural-arctic',
+  'procedural-egypt',
+  'procedural-mystic',
+  'procedural-underwater',
+  'procedural-dojo',
+  'procedural-steampunk',
+  'procedural-haunted',
+  'procedural-matrix'
 ];
 
 // Room state storage
@@ -295,14 +305,21 @@ io.on('connection', (socket) => {
     const room = rooms.get(currentRoomCode);
     if (!room || room.status !== 'HUNTING') return;
 
-    // Verify distance to all unfound hiders
+    // Verify hit against all unfound hiders (bounding box + radial check)
     let hitHider = null;
-    const hitThreshold = 55; // Pixels distance radius around stickman center
-
     for (const hider of Object.values(room.hidersData)) {
       if (hider.found) continue;
+      const scale = hider.scale || 1.0;
       const dist = Math.hypot(x - hider.x, y - hider.y);
-      if (dist <= hitThreshold) {
+      const halfW = (130 * scale) / 2 + 24;
+      const halfH = (150 * scale) / 2 + 24;
+      const inBox = (
+        x >= hider.x - halfW &&
+        x <= hider.x + halfW &&
+        y >= hider.y - halfH &&
+        y <= hider.y + halfH
+      );
+      if (dist <= 85 * scale || inBox) {
         hitHider = hider;
         break;
       }

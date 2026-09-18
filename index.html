@@ -38,12 +38,22 @@
     <!-- Main Game Display Area -->
     <main class="game-viewport-wrapper">
       <div id="canvas-container" class="canvas-container">
-        <!-- Multi-layer Canvases (1280x720 native internal res) -->
-        <canvas id="bg-canvas" width="1280" height="720"></canvas>
-        <canvas id="character-canvas" width="1280" height="720"></canvas>
-        <canvas id="paint-canvas" width="1280" height="720"></canvas>
-        <canvas id="vision-canvas" width="1280" height="720"></canvas>
-        <canvas id="fx-canvas" width="1280" height="720"></canvas>
+        <!-- Canvas Stage Wrapper for Zoom & Pan -->
+        <div id="canvas-stage" class="canvas-stage">
+          <!-- Multi-layer Canvases (1280x720 native internal res) -->
+          <canvas id="bg-canvas" width="1280" height="720"></canvas>
+          <canvas id="character-canvas" width="1280" height="720"></canvas>
+          <canvas id="paint-canvas" width="1280" height="720"></canvas>
+          <canvas id="vision-canvas" width="1280" height="720"></canvas>
+          <canvas id="fx-canvas" width="1280" height="720"></canvas>
+        </div>
+
+        <!-- Dynamic Zoom Level Badge -->
+        <div id="canvas-zoom-badge" class="canvas-zoom-badge hidden" title="Shift + Scroll to zoom. Click or Space+Drag to reset/pan.">
+          <span class="zoom-icon">🔍</span>
+          <span id="canvas-zoom-text">100%</span>
+          <span class="zoom-reset-btn">Reset</span>
+        </div>
 
         <!-- Floating Eyedropper Magnifier Loupe -->
         <div id="eyedropper-loupe" class="loupe hidden">
@@ -141,7 +151,7 @@
             <div class="brush-size-card">
               <span class="tool-title">BRUSH SIZE (SCROLL WHEEL)</span>
               <div class="slider-with-val">
-                <input type="range" id="brush-size-slider" min="6" max="64" value="24" step="2">
+                <input type="range" id="brush-size-slider" min="1" max="64" value="24" step="1">
                 <span id="brush-size-display" class="tool-value">24px</span>
               </div>
             </div>
@@ -336,6 +346,16 @@
               <option value="procedural-candy">🍭 Sweet Candy Land</option>
               <option value="procedural-circuit">⚡ Cyber Circuit Board</option>
               <option value="procedural-autumn">🍂 Golden Autumn Park</option>
+              <option value="procedural-volcano">🌋 Magma Cavern</option>
+              <option value="procedural-space">🚀 Cosmic Nebula</option>
+              <option value="procedural-arctic">❄️ Crystal Ice Cave</option>
+              <option value="procedural-egypt">🏺 Pharaoh's Tomb</option>
+              <option value="procedural-mystic">🔮 Mystic Mushroom Hollow</option>
+              <option value="procedural-underwater">🌊 Sunken Atlantis</option>
+              <option value="procedural-dojo">🌸 Zen Bamboo Garden</option>
+              <option value="procedural-steampunk">⚙️ Steampunk Workshop</option>
+              <option value="procedural-haunted">🏰 Haunted Gothic Castle</option>
+              <option value="procedural-matrix">🟢 Digital Cyber Matrix</option>
             </select>
           </div>
 
@@ -357,7 +377,10 @@
               <option value="15">15 Seconds (Rapid)</option>
               <option value="30" selected>30 Seconds (Default)</option>
               <option value="45">45 Seconds (Relaxed)</option>
-              <option value="60">60 Seconds (Detailed)</option>
+              <option value="60">1 Minute (60s)</option>
+              <option value="90">1.5 Minutes (90s)</option>
+              <option value="120">2 Minutes (120s)</option>
+              <option value="180">3 Minutes (180s)</option>
             </select>
           </div>
 
@@ -428,8 +451,10 @@
               <ul>
                 <li><strong>Right Click:</strong> Eyedropper — samples the exact pixel color from the background.</li>
                 <li><strong>Left Click & Drag:</strong> Paintbrush — paints smoothly over your stickman with the sampled color.</li>
-                <li><strong>Mouse Scroll:</strong> Adjusts brush size from fine detail (6px) to wide coverage (64px).</li>
-                <li><strong>Arrow Keys / WASD / Drag:</strong> Reposition your stickman anywhere on the canvas.</li>
+                <li><strong>Shift + Scroll Wheel:</strong> Zoom in & out with cursor as focal center (up to 6x detail).</li>
+                <li><strong>Spacebar + Drag:</strong> Pan across canvas while zoomed in.</li>
+                <li><strong>Ctrl + Scroll:</strong> Adjusts paint opacity (5% to 100%).</li>
+                <li><strong>Mouse Scroll:</strong> Adjusts brush size from fine detail (1px) to wide coverage (64px).</li>
               </ul>
             </div>
           </div>

@@ -171,9 +171,19 @@ export class UIManager {
     }
   }
 
+  // Format seconds to M:SS or raw seconds
+  formatTime(seconds) {
+    if (seconds >= 60) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }
+    return `${seconds}`;
+  }
+
   // Update Timer in HUD
   updateTimer(seconds, isUrgent = false) {
-    this.hudTimerVal.textContent = seconds;
+    this.hudTimerVal.textContent = this.formatTime(seconds);
     if (isUrgent) {
       this.hudTimerVal.classList.add('timer-urgent');
     } else {
@@ -247,7 +257,7 @@ export class UIManager {
     const timerEl = document.getElementById('waiting-countdown-val');
     if (!el) return;
     if (show) {
-      if (timerEl) timerEl.textContent = seconds;
+      if (timerEl) timerEl.textContent = this.formatTime(seconds);
       el.classList.remove('hidden');
     } else {
       el.classList.add('hidden');
@@ -256,7 +266,7 @@ export class UIManager {
 
   updateWaitingCountdown(seconds) {
     const timerEl = document.getElementById('waiting-countdown-val');
-    if (timerEl) timerEl.textContent = seconds;
+    if (timerEl) timerEl.textContent = this.formatTime(seconds);
   }
 
   // Spectator Banner for Hiders while Hunter searches
