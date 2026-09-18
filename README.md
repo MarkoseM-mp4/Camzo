@@ -2,7 +2,7 @@
 
 A high-stakes digital camouflage game where Hiders blend into dynamically rendered environments using realistic paint tools, and Hunters sweep darkness with a narrow flashlight beam to locate them.
 
-Playable in **Pass & Play**, **Solo vs AI**, and **Online Multiplayer (5-Letter Room Codes)**.
+Playable in **Pass & Play** and **Online Multiplayer (5-Letter Room Codes)**.
 
 ---
 
@@ -32,8 +32,6 @@ Camzo features 20 distinct procedural environments, each offering unique texture
 | 18 | ⚙️ **Steampunk Workshop** | `procedural-steampunk` | Riveted iron boiler panels, interlocking mechanical brass and bronze gears, copper pipe networks, and pressure gauges. |
 | 19 | 🏰 **Haunted Gothic Castle** | `procedural-haunted` | Midnight purple chamber, towering pointed-arch stained-glass mosaic windows, ghostly candles, and gargoyles. |
 | 20 | 🟢 **Digital Cyber Matrix** | `procedural-matrix` | Phosphor CRT backdrop, 3D perspective wireframe horizon grid, cascading digital code rain, and server racks. |
-
-*(Custom image background uploads are also supported via drag-and-drop).*
 
 ---
 
@@ -85,7 +83,4 @@ http://localhost:8080/
 
 ## 🕹️ Game Modes
 1. **Pass & Play**: Play locally with friends on the same computer screen.
-2. **Solo vs AI**:
-   - **Solo Hunter**: AI hides and automatically camouflages itself; you take the flashlight and hunt!
-   - **Solo Hider**: You camouflage yourself; intelligent AI sweeps the flashlight looking for you.
-3. **Online Multiplayer**: Host or join a room using a unique 5-letter room code with real-time Socket.io networking.
+2. **Online Multiplayer**: Host or join a room using a unique 5-letter room code with real-time Socket.io networking.

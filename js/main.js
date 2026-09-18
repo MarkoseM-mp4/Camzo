@@ -9,7 +9,6 @@ import { Stickman } from './stickman.js';
 import { environmentManager } from './environments.js';
 import { PaintEngine } from './paint-engine.js';
 import { HunterVision } from './hunter-vision.js';
-import { AIAgent } from './ai-agent.js';
 import { ui } from './ui.js';
 import { networkManager } from './network.js';
 
@@ -27,11 +26,10 @@ class Game {
     // Subsystems
     this.paintEngine = new PaintEngine(this.container, this.paintCanvas, this.bgCanvas);
     this.hunterVision = new HunterVision(this.container, this.visionCanvas, this.fxCanvas);
-    this.aiAgent = new AIAgent();
 
     // Game State
     this.state = 'LOBBY'; // 'LOBBY', 'HIDING', 'TRANSITION', 'HUNTING', 'GAME_OVER'
-    this.gameMode = 'pass-and-play'; // 'pass-and-play', 'solo-hider', 'solo-hunter', 'online-multiplayer'
+    this.gameMode = 'pass-and-play'; // 'pass-and-play', 'online-multiplayer'
     this.hiders = [];
     this.activePlayerHider = null;
     this.hidingDuration = 30;
@@ -160,34 +158,7 @@ class Game {
       });
     }
 
-    // Custom Background File Upload (for offline play)
-    const customBgInput = document.getElementById('custom-bg-input');
-    const uploadDropzone = document.getElementById('upload-dropzone');
-    const customBgNameEl = document.getElementById('custom-bg-preview-name');
 
-    if (uploadDropzone && customBgInput) {
-      uploadDropzone.addEventListener('click', () => customBgInput.click());
-      customBgInput.addEventListener('change', async (e) => {
-        if (e.target.files && e.target.files[0]) {
-          const file = e.target.files[0];
-          await environmentManager.setCustomImage(file);
-          customBgNameEl.textContent = `Selected: ${file.name}`;
-          customBgNameEl.classList.remove('hidden');
-
-          const sel = document.getElementById('select-background');
-          if (sel) {
-            let opt = sel.querySelector('option[value="custom"]');
-            if (!opt) {
-              opt = document.createElement('option');
-              opt.value = 'custom';
-              opt.textContent = `📁 Custom Image: ${file.name}`;
-              sel.prepend(opt);
-            }
-            sel.value = 'custom';
-          }
-        }
-      });
-    }
 
     // STICKMAN PLACEMENT: Follow mouse until left click places it
     this.container.addEventListener('mousemove', (e) => {
@@ -716,7 +687,7 @@ class Game {
     for (let i = 0; i < this.hidersCount; i++) {
       const rx = 200 + Math.random() * (this.bgCanvas.width - 400);
       const ry = 200 + Math.random() * (this.bgCanvas.height - 350);
-      const isHuman = (this.gameMode !== 'solo-hunter') && (i === 0);
+      const isHuman = (i === 0);
 
       const hider = new Stickman({
         id: `hider_${i + 1}`,
@@ -733,13 +704,6 @@ class Game {
     this.activePlayerHider = this.hiders.find(h => h.isHuman) || null;
     this.hunterVision.setHiders(this.hiders);
 
-    if (this.gameMode === 'solo-hunter') {
-      this.hiders.forEach(h => {
-        h.isPlaced = true;
-        AIAgent.camouflageHider(h, this.bgCanvas, this.paintCanvas);
-      });
-    }
-
     this.renderCharacters();
 
     ui.setPhase('HIDING');
@@ -747,12 +711,8 @@ class Game {
     ui.updateHidersRemaining(this.hiders.length, this.hiders.length);
     ui.updateHunterStats(0, 0, 100);
 
-    if (this.gameMode === 'solo-hunter') {
-      this.startTransitionToHunting();
-    } else {
-      ui.showPhaseBanner('PLACE CHAMELEON', '', 'Move your mouse to choose a spot, then LEFT-CLICK to place!', 'STEP 1', 3000);
-      this.startHidingCountdown();
-    }
+    ui.showPhaseBanner('PLACE CHAMELEON', '', 'Move your mouse to choose a spot, then LEFT-CLICK to place!', 'STEP 1', 3000);
+    this.startHidingCountdown();
   }
 
   startHidingCountdown() {
@@ -791,22 +751,9 @@ class Game {
     this.hiders.forEach(h => { h.isPlaced = true; });
     this.renderCharacters();
 
-    if (this.gameMode === 'pass-and-play') {
-      ui.showPassDevice(true, () => {
-        this.beginHuntingPhase();
-      });
-    } else {
-      ui.showPhaseBanner('HUNTING PHASE', '3', 'Hunter takes the field. Search through the darkness!', 'GET READY', 1000);
-      setTimeout(() => {
-        ui.showPhaseBanner('HUNTING PHASE', '2', 'Investigate suspicious spots! Misses cost lives!', 'GET READY', 1000);
-      }, 1000);
-      setTimeout(() => {
-        ui.showPhaseBanner('HUNTING PHASE', '1', 'Find all hidden hiders!', 'GET READY', 1000);
-      }, 2000);
-      setTimeout(() => {
-        this.beginHuntingPhase();
-      }, 3000);
-    }
+    ui.showPassDevice(true, () => {
+      this.beginHuntingPhase();
+    });
   }
 
   beginHuntingPhase() {
@@ -816,12 +763,6 @@ class Game {
     this.startTime = Date.now();
 
     this.hunterVision.setEnabled(true, false);
-
-    if (this.gameMode === 'solo-hider') {
-      this.aiAgent.startAIHunter(this.hunterVision, this.hiders, () => {
-        this.endGame('HUNTER');
-      });
-    }
 
     this.currentTimer = this.huntingDuration;
     ui.updateTimer(this.currentTimer);
@@ -848,7 +789,6 @@ class Game {
   endGame(winner) {
     this.state = 'GAME_OVER';
     clearInterval(this.timerInterval);
-    this.aiAgent.stopAIHunter();
     this.paintEngine.setEnabled(false);
     this.hunterVision.setEnabled(false);
     ui.showSpectatorBanner(false);
@@ -873,7 +813,6 @@ class Game {
 
   returnToLobby() {
     clearInterval(this.timerInterval);
-    this.aiAgent.stopAIHunter();
     this.state = 'LOBBY';
     ui.hideUrgentCountdown();
     ui.showSpectatorBanner(false);

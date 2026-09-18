@@ -1,7 +1,6 @@
 /**
  * Background Environment Manager for Camzo
- * Loads and renders images from the Background/ folder randomly,
- * supports custom uploaded images, and provides rich procedural environments.
+ * Loads and renders procedural and folder background environments.
  */
 
 export class EnvironmentManager {
@@ -33,8 +32,6 @@ export class EnvironmentManager {
     ];
 
     this.currentBackgroundName = 'Default';
-    this.customImage = null;
-    this.customImageName = '';
     this.imageCache = new Map();
     this.rnd = Math.random;
   }
@@ -50,24 +47,9 @@ export class EnvironmentManager {
     };
   }
 
-  // Preload background images into memory (if any custom/folder)
+  // Preload background images into memory (if any folder)
   async preloadImages() {
     return Promise.resolve();
-  }
-
-  // Set user custom uploaded image
-  setCustomImage(file) {
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        this.customImage = img;
-        this.customImageName = file.name;
-        resolve(img);
-      };
-      img.onerror = reject;
-      img.src = url;
-    });
   }
 
   // Load and draw background onto the provided canvas (with optional seed for identical multiplayer sync)
@@ -82,12 +64,6 @@ export class EnvironmentManager {
     }
 
     let chosenType = selection;
-
-    if (this.customImage && selection === 'custom') {
-      this.drawCoverImage(ctx, this.customImage, canvas.width, canvas.height);
-      this.currentBackgroundName = `Custom: ${this.customImageName}`;
-      return this.currentBackgroundName;
-    }
 
     // If random, pick from available procedural themes using the active RNG
     if (chosenType === 'random' || !this.proceduralThemes.some(t => t.id === chosenType)) {
