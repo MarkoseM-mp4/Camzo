@@ -40,6 +40,7 @@ class Game {
     this.currentBgName = 'Default';
     this.bgChoice = 'random';
     this.hidersCount = 1;
+    this.hunterLivesSetting = 10;
     this.isDisguiseRevealed = false;
 
     // Online Multiplayer State
@@ -96,12 +97,23 @@ class Game {
       btnFinishHiding.addEventListener('click', () => {
         if (this.state === 'HIDING') {
           if (this.activePlayerHider && !this.activePlayerHider.isPlaced) {
-            this.activePlayerHider.isPlaced = true;
+            ui.showPhaseBanner('PLACE STICKMAN FIRST!', '', 'Left-click on the canvas to place your chameleon!', 'ACTION NEEDED', 2000);
+            return;
           }
+
           if (this.isOnline) {
-            this.submitOnlineCamouflage();
+            if (!this.submittedCamo) {
+              this.submittedCamo = true;
+              this.paintEngine.setEnabled(false);
+              ui.showPhaseBanner('DISGUISE LOCKED!', '', 'Waiting for other hiders...', 'SUBMITTED', 0);
+              networkManager.submitCamo(
+                this.activePlayerHider.x,
+                this.activePlayerHider.y,
+                this.activePlayerHider.scale,
+                this.paintCanvas.toDataURL()
+              );
+            }
           } else {
-            clearInterval(this.timerInterval);
             this.startTransitionToHunting();
           }
         }
@@ -200,7 +212,7 @@ class Game {
     };
 
     this.hunterVision.onMiss = (hunterLives) => {
-      ui.renderHearts(hunterLives, 10);
+      ui.renderHearts(hunterLives, this.hunterVision.maxHunterLives);
       ui.updateHunterStats(
         this.hunterVision.totalClicks,
         this.hunterVision.misses,
@@ -434,7 +446,7 @@ class Game {
     // Investigation Result: Miss!
     networkManager.onInvestigationMiss = (data) => {
       this.hunterVision.triggerNetworkMiss(data.x, data.y, data.hunterLives);
-      ui.renderHearts(data.hunterLives, 10);
+      ui.renderHearts(data.hunterLives, this.hunterVision.maxHunterLives);
     };
 
     // Game Over
@@ -461,6 +473,8 @@ class Game {
     this.isDisguiseRevealed = false;
     this.paintEngine.clear();
     this.hunterVision.resetStats();
+    const maxLives = data.hunterLives || (data.room && data.room.hunterLives) || 10;
+    this.hunterVision.setHunterLives(maxLives);
     this.hunterVision.setEnabled(false);
 
     // 1. Load Background with identical seed
@@ -470,7 +484,7 @@ class Game {
     const totalHiders = data.room.players.filter(p => p.role === 'hider').length;
 
     ui.setPhase('HIDING');
-    ui.renderHearts(10, 10);
+    ui.renderHearts(this.hunterVision.hunterLives, this.hunterVision.maxHunterLives);
     ui.updateHidersRemaining(totalHiders, totalHiders);
     ui.updateHunterStats(0, 0, 100);
 
@@ -614,7 +628,7 @@ class Game {
     await Promise.all(imageLoadPromises);
     this.renderCharacters();
 
-    ui.renderHearts(data.hunterLives || 10, 10);
+    ui.renderHearts(data.hunterLives || this.hunterVision.hunterLives, this.hunterVision.maxHunterLives);
     ui.updateHidersRemaining(data.remainingHidersCount, this.hiders.length);
 
     if (this.myOnlineRole === 'hunter') {
@@ -664,6 +678,11 @@ class Game {
     const radius = parseInt(radiusSelect.value, 10) || 160;
     this.hunterVision.setVisionRadius(radius);
 
+    const livesSelect = document.getElementById('select-hunter-lives');
+    this.hunterLivesSetting = parseInt(livesSelect ? livesSelect.value : 10, 10) || 10;
+    this.hunterLivesSetting = Math.max(3, Math.min(10, this.hunterLivesSetting));
+    this.hunterVision.setHunterLives(this.hunterLivesSetting);
+
     const bgSelect = document.getElementById('select-background');
     this.bgChoice = bgSelect ? bgSelect.value : 'random';
 
@@ -677,6 +696,7 @@ class Game {
     this.paintEngine.clear();
     this.paintEngine.setEnabled(false);
     this.hunterVision.resetStats();
+    this.hunterVision.setHunterLives(this.hunterLivesSetting);
     this.hunterVision.setEnabled(false);
 
     // 1. Load Background
@@ -707,7 +727,7 @@ class Game {
     this.renderCharacters();
 
     ui.setPhase('HIDING');
-    ui.renderHearts(10, 10);
+    ui.renderHearts(this.hunterVision.hunterLives, this.hunterVision.maxHunterLives);
     ui.updateHidersRemaining(this.hiders.length, this.hiders.length);
     ui.updateHunterStats(0, 0, 100);
 

@@ -34,6 +34,7 @@ export class HunterVision {
     this.totalClicks = 0;
     this.hits = 0;
     this.misses = 0;
+    this.maxHunterLives = 10;
     this.hunterLives = 10;
 
     // Hiders reference list
@@ -65,6 +66,12 @@ export class HunterVision {
     this.visionRadius = radius;
   }
 
+  setHunterLives(lives) {
+    const val = parseInt(lives, 10) || 10;
+    this.maxHunterLives = Math.max(3, Math.min(10, val));
+    this.hunterLives = this.maxHunterLives;
+  }
+
   setEnabled(val, isSpectator = false) {
     this.enabled = val;
     this.isSpectator = isSpectator;
@@ -78,7 +85,7 @@ export class HunterVision {
     this.totalClicks = 0;
     this.hits = 0;
     this.misses = 0;
-    this.hunterLives = 10;
+    this.hunterLives = this.maxHunterLives || 10;
     this.particles = [];
     this.ripples = [];
   }

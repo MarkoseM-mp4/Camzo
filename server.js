@@ -94,7 +94,8 @@ io.on('connection', (socket) => {
       settings: {
         background: 'random',
         hidingTime: 30,
-        visionRadius: 160
+        visionRadius: 160,
+        hunterLives: 10
       },
       players: [hostPlayer],
       seed: 0,
@@ -214,7 +215,7 @@ io.on('connection', (socket) => {
     }
 
     room.hidersData = {};
-    room.hunterLives = 10;
+    room.hunterLives = Math.max(3, Math.min(10, parseInt(room.settings.hunterLives, 10) || 10));
     const activeHiders = room.players.filter(p => p.role === 'hider');
     room.remainingHidersCount = activeHiders.length;
 
@@ -223,6 +224,7 @@ io.on('connection', (socket) => {
       background: room.activeBackgroundId,
       hidingTime: Number(room.settings.hidingTime) || 30,
       visionRadius: Number(room.settings.visionRadius) || 160,
+      hunterLives: room.hunterLives,
       room: getSanitizedRoom(room)
     });
   });
@@ -389,7 +391,7 @@ io.on('connection', (socket) => {
 
     room.status = 'LOBBY';
     room.hidersData = {};
-    room.hunterLives = 10;
+    room.hunterLives = Math.max(3, Math.min(10, parseInt(room.settings.hunterLives, 10) || 10));
     room.remainingHidersCount = 0;
 
     io.to(currentRoomCode).emit('return_to_lobby', { room: getSanitizedRoom(room) });
