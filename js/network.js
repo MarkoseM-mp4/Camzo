@@ -144,9 +144,9 @@ export class NetworkManager {
     });
   }
 
-  createRoom(nickname) {
+  createRoom(nickname, settings = null) {
     this.connect();
-    this.socket.emit('create_room', { nickname });
+    this.socket.emit('create_room', { nickname, settings });
   }
 
   joinRoom(roomCode, nickname) {
@@ -164,14 +164,20 @@ export class NetworkManager {
     this.socket.emit('toggle_role', { targetPlayerId });
   }
 
-  startGame() {
+  startGame(settings = null) {
     if (!this.socket) return;
-    this.socket.emit('start_game');
+    this.socket.emit('start_game', { settings });
   }
 
-  submitCamo({ x, y, scale, camoDataUrl }) {
+  submitCamo(arg1, y, scale, camoDataUrl) {
     if (!this.socket) return;
-    this.socket.emit('submit_camo', { x, y, scale, camoDataUrl });
+    let payload;
+    if (typeof arg1 === 'object' && arg1 !== null) {
+      payload = arg1;
+    } else {
+      payload = { x: arg1, y, scale, camoDataUrl };
+    }
+    this.socket.emit('submit_camo', payload);
   }
 
   notifyHidingTimeout() {

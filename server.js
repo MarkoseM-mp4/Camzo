@@ -77,31 +77,33 @@ io.on('connection', (socket) => {
   let currentRoomCode = null;
 
   // Create Room
-  socket.on('create_room', ({ nickname }) => {
+  socket.on('create_room', ({ nickname, settings }) => {
     const code = generateRoomCode();
     currentRoomCode = code;
-
     const hostPlayer = {
       id: socket.id,
-      nickname: (nickname && nickname.trim()) || 'Host',
-      role: 'hunter'
+      nickname: (nickname || 'Host').trim().substr(0, 15),
+      role: 'hider',
+      isHost: true
+    };
+
+    const initialSettings = {
+      background: settings?.background || 'random',
+      hidingTime: Number(settings?.hidingTime) || 30,
+      visionRadius: Number(settings?.visionRadius) || 160,
+      hunterLives: Math.max(3, Math.min(10, Number(settings?.hunterLives) || 10))
     };
 
     const room = {
       code,
       hostId: socket.id,
       status: 'LOBBY',
-      settings: {
-        background: 'random',
-        hidingTime: 30,
-        visionRadius: 160,
-        hunterLives: 10
-      },
+      settings: initialSettings,
       players: [hostPlayer],
       seed: 0,
       activeBackgroundId: 'procedural-forest',
       hidersData: {},
-      hunterLives: 10,
+      hunterLives: initialSettings.hunterLives,
       remainingHidersCount: 0
     };
 
@@ -183,10 +185,14 @@ io.on('connection', (socket) => {
   });
 
   // Start Game (Host only)
-  socket.on('start_game', () => {
+  socket.on('start_game', (data) => {
     if (!currentRoomCode) return;
     const room = rooms.get(currentRoomCode);
     if (!room || room.hostId !== socket.id) return;
+
+    if (data?.settings) {
+      room.settings = { ...room.settings, ...data.settings };
+    }
 
     // Ensure there is at least one hunter and one hider
     const hunters = room.players.filter(p => p.role === 'hunter');
@@ -230,7 +236,7 @@ io.on('connection', (socket) => {
   });
 
   // Hider submits their camouflage canvas and stickman coordinates
-  socket.on('submit_camo', ({ x, y, scale, camoDataUrl }) => {
+  socket.on('submit_camo', (data) => {
     if (!currentRoomCode) return;
     const room = rooms.get(currentRoomCode);
     if (!room || room.status !== 'HIDING') return;
@@ -238,13 +244,18 @@ io.on('connection', (socket) => {
     const player = room.players.find(p => p.id === socket.id);
     if (!player) return;
 
+    const x = Number.isFinite(Number(data?.x)) ? Math.round(Number(data.x)) : 640;
+    const y = Number.isFinite(Number(data?.y)) ? Math.round(Number(data.y)) : 360;
+    const scale = Number.isFinite(Number(data?.scale)) ? Number(data.scale) : 1.0;
+    const camoDataUrl = (typeof data?.camoDataUrl === 'string' && data.camoDataUrl.length > 50) ? data.camoDataUrl : null;
+
     room.hidersData[socket.id] = {
       id: socket.id,
       nickname: player.nickname,
-      x: Math.round(x),
-      y: Math.round(y),
-      scale: scale || 1.0,
-      camoDataUrl: camoDataUrl || null,
+      x,
+      y,
+      scale,
+      camoDataUrl,
       found: false
     };
 
@@ -298,7 +309,7 @@ io.on('connection', (socket) => {
   // Hunter moves cursor / flashlight
   socket.on('hunter_move', ({ x, y }) => {
     if (!currentRoomCode) return;
-    socket.to(currentRoomCode).emit('spectate_hunter', { x, y });
+    socket.to(currentRoomCode).emit('spectate_hunter', { hunterId: socket.id, x, y });
   });
 
   // Hunter investigates coordinates
@@ -307,19 +318,27 @@ io.on('connection', (socket) => {
     const room = rooms.get(currentRoomCode);
     if (!room || room.status !== 'HUNTING') return;
 
+    const clickX = Number(x);
+    const clickY = Number(y);
+    if (!Number.isFinite(clickX) || !Number.isFinite(clickY)) return;
+
     // Verify hit against all unfound hiders (bounding box + radial check)
     let hitHider = null;
     for (const hider of Object.values(room.hidersData)) {
       if (hider.found) continue;
-      const scale = hider.scale || 1.0;
-      const dist = Math.hypot(x - hider.x, y - hider.y);
-      const halfW = (130 * scale) / 2 + 24;
-      const halfH = (150 * scale) / 2 + 24;
+      const scale = Number(hider.scale) || 1.0;
+      const hx = Number(hider.x);
+      const hy = Number(hider.y);
+      if (!Number.isFinite(hx) || !Number.isFinite(hy)) continue;
+
+      const dist = Math.hypot(clickX - hx, clickY - hy);
+      const halfW = (130 * scale) / 2 + 25;
+      const halfH = (150 * scale) / 2 + 25;
       const inBox = (
-        x >= hider.x - halfW &&
-        x <= hider.x + halfW &&
-        y >= hider.y - halfH &&
-        y <= hider.y + halfH
+        clickX >= hx - halfW &&
+        clickX <= hx + halfW &&
+        clickY >= hy - halfH &&
+        clickY <= hy + halfH
       );
       if (dist <= 85 * scale || inBox) {
         hitHider = hider;

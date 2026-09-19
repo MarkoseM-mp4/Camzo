@@ -83,7 +83,7 @@ class Game {
       btnStart.addEventListener('click', () => {
         if (this.gameMode === 'online-multiplayer') {
           if (networkManager.isHost) {
-            networkManager.startGame();
+            networkManager.startGame(this.getCurrentLobbySettings());
           }
         } else {
           this.startGameFromLobby();
@@ -102,17 +102,7 @@ class Game {
           }
 
           if (this.isOnline) {
-            if (!this.submittedCamo) {
-              this.submittedCamo = true;
-              this.paintEngine.setEnabled(false);
-              ui.showPhaseBanner('DISGUISE LOCKED!', '', 'Waiting for other hiders...', 'SUBMITTED', 0);
-              networkManager.submitCamo(
-                this.activePlayerHider.x,
-                this.activePlayerHider.y,
-                this.activePlayerHider.scale,
-                this.paintCanvas.toDataURL()
-              );
-            }
+            this.submitOnlineCamouflage();
           } else {
             this.startTransitionToHunting();
           }
@@ -251,6 +241,19 @@ class Game {
     };
   }
 
+  getCurrentLobbySettings() {
+    const bgSelect = document.getElementById('select-background');
+    const timeSelect = document.getElementById('select-hiding-time');
+    const radiusSelect = document.getElementById('select-vision-radius');
+    const livesSelect = document.getElementById('select-hunter-lives');
+    return {
+      background: bgSelect ? bgSelect.value : 'random',
+      hidingTime: parseInt(timeSelect ? timeSelect.value : 30, 10) || 30,
+      visionRadius: parseInt(radiusSelect ? radiusSelect.value : 160, 10) || 160,
+      hunterLives: Math.max(3, Math.min(10, parseInt(livesSelect ? livesSelect.value : 10, 10) || 10))
+    };
+  }
+
   /* -------------------------------------------------------------
      ONLINE MULTIPLAYER SETUP & NETWORKING
      ------------------------------------------------------------- */
@@ -284,7 +287,7 @@ class Game {
       btnCreateRoom.addEventListener('click', () => {
         const nickInput = document.getElementById('mp-nickname');
         const nickname = (nickInput && nickInput.value.trim()) || 'Host';
-        networkManager.createRoom(nickname);
+        networkManager.createRoom(nickname, this.getCurrentLobbySettings());
       });
     }
 
@@ -337,20 +340,20 @@ class Game {
     const bgSelect = document.getElementById('select-background');
     const timeSelect = document.getElementById('select-hiding-time');
     const radiusSelect = document.getElementById('select-vision-radius');
+    const livesSelect = document.getElementById('select-hunter-lives');
 
     const onSettingChange = () => {
+      const settings = this.getCurrentLobbySettings();
+      this.hunterLivesSetting = settings.hunterLives;
       if (this.gameMode === 'online-multiplayer' && networkManager.isHost) {
-        networkManager.updateSettings({
-          background: bgSelect.value,
-          hidingTime: timeSelect.value,
-          visionRadius: radiusSelect.value
-        });
+        networkManager.updateSettings(settings);
       }
     };
 
     if (bgSelect) bgSelect.addEventListener('change', onSettingChange);
     if (timeSelect) timeSelect.addEventListener('change', onSettingChange);
     if (radiusSelect) radiusSelect.addEventListener('change', onSettingChange);
+    if (livesSelect) livesSelect.addEventListener('change', onSettingChange);
   }
 
   setupNetworkCallbacks() {
@@ -390,9 +393,14 @@ class Game {
         const bgSelect = document.getElementById('select-background');
         const timeSelect = document.getElementById('select-hiding-time');
         const radiusSelect = document.getElementById('select-vision-radius');
+        const livesSelect = document.getElementById('select-hunter-lives');
         if (bgSelect && data.room.settings.background) bgSelect.value = data.room.settings.background;
         if (timeSelect && data.room.settings.hidingTime) timeSelect.value = data.room.settings.hidingTime;
         if (radiusSelect && data.room.settings.visionRadius) radiusSelect.value = data.room.settings.visionRadius;
+        if (livesSelect && data.room.settings.hunterLives) {
+          livesSelect.value = data.room.settings.hunterLives;
+          this.hunterLivesSetting = Number(data.room.settings.hunterLives);
+        }
       }
     };
 
@@ -417,6 +425,7 @@ class Game {
       this.hidingDuration = data.hidingTime;
       this.hunterVision.setVisionRadius(data.visionRadius);
       this.submittedCamo = false;
+      this.myCamoDataUrl = null;
 
       ui.showLobby(false);
       await this.startOnlineMatch(data);
@@ -429,9 +438,8 @@ class Game {
 
     // Spectate Hunter Flashlight Movement
     networkManager.onSpectateHunter = (data) => {
-      if (this.isOnline && this.myOnlineRole === 'hider') {
-        this.hunterVision.targetX = data.x;
-        this.hunterVision.targetY = data.y;
+      if (this.isOnline) {
+        this.hunterVision.updateRemoteHunter(data.hunterId, data.x, data.y);
       }
     };
 
@@ -565,19 +573,26 @@ class Game {
     clearInterval(this.timerInterval);
     ui.hideUrgentCountdown();
 
-    if (this.activePlayerHider && !this.activePlayerHider.isPlaced) {
+    if (this.activePlayerHider) {
       this.activePlayerHider.isPlaced = true;
+      if (!Number.isFinite(this.activePlayerHider.x)) this.activePlayerHider.x = 640;
+      if (!Number.isFinite(this.activePlayerHider.y)) this.activePlayerHider.y = 360;
     }
 
     this.paintEngine.setEnabled(false);
 
     // Capture painted camouflage layer
     const camoDataUrl = this.paintCanvas.toDataURL('image/png');
+    this.myCamoDataUrl = camoDataUrl;
+
+    const x = this.activePlayerHider ? Math.round(this.activePlayerHider.x) : 640;
+    const y = this.activePlayerHider ? Math.round(this.activePlayerHider.y) : 360;
+    const scale = this.activePlayerHider ? (this.activePlayerHider.scale || 1.0) : 1.0;
 
     networkManager.submitCamo({
-      x: this.activePlayerHider ? this.activePlayerHider.x : 640,
-      y: this.activePlayerHider ? this.activePlayerHider.y : 400,
-      scale: this.activePlayerHider ? this.activePlayerHider.scale : 1.0,
+      x,
+      y,
+      scale,
       camoDataUrl
     });
 
@@ -599,16 +614,23 @@ class Game {
     pCtx.clearRect(0, 0, this.paintCanvas.width, this.paintCanvas.height);
 
     // Reconstruct all hiders from server payload
-    this.hiders = data.hiders.map(h => new Stickman({
-      id: h.id,
-      name: h.nickname,
-      x: h.x,
-      y: h.y,
-      scale: h.scale || 1.0,
-      lives: 10,
-      isHuman: false,
-      isPlaced: true
-    }));
+    this.hiders = data.hiders.map(h => {
+      const camoUrl = (h.id === networkManager.myPlayerId && !h.camoDataUrl && this.myCamoDataUrl)
+        ? this.myCamoDataUrl
+        : h.camoDataUrl;
+      h.camoDataUrl = camoUrl;
+
+      return new Stickman({
+        id: h.id,
+        name: h.nickname,
+        x: Number.isFinite(Number(h.x)) ? Number(h.x) : 640,
+        y: Number.isFinite(Number(h.y)) ? Number(h.y) : 360,
+        scale: Number.isFinite(Number(h.scale)) ? Number(h.scale) : 1.0,
+        lives: 10,
+        isHuman: false,
+        isPlaced: true
+      });
+    });
 
     this.hunterVision.setHiders(this.hiders);
 
@@ -628,7 +650,9 @@ class Game {
     await Promise.all(imageLoadPromises);
     this.renderCharacters();
 
-    ui.renderHearts(data.hunterLives || this.hunterVision.hunterLives, this.hunterVision.maxHunterLives);
+    const maxLives = Math.max(3, Math.min(10, Number(data.hunterLives || (data.room && data.room.hunterLives) || this.hunterVision.maxHunterLives || 10)));
+    this.hunterVision.setHunterLives(maxLives);
+    ui.renderHearts(this.hunterVision.hunterLives, this.hunterVision.maxHunterLives);
     ui.updateHidersRemaining(data.remainingHidersCount, this.hiders.length);
 
     if (this.myOnlineRole === 'hunter') {
@@ -779,6 +803,7 @@ class Game {
   beginHuntingPhase() {
     this.state = 'HUNTING';
     ui.setPhase('HUNTING');
+    ui.renderHearts(this.hunterVision.hunterLives, this.hunterVision.maxHunterLives);
     ui.showPhaseBanner('HUNT!', '', 'Flashlight active. Click to investigate. Watch your lives!', 'PHASE 2', 2000);
     this.startTime = Date.now();
 

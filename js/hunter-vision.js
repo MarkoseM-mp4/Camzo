@@ -30,6 +30,9 @@ export class HunterVision {
     // Ambient darkness alpha (0.96 for near-pitch darkness with faint contour)
     this.darknessAlpha = 0.97;
 
+    // Remote hunters tracking for spectator / multiplayer
+    this.remoteHunters = new Map(); // hunterId -> { currentX, currentY, targetX, targetY, lastSeen }
+
     // Investigation statistics
     this.totalClicks = 0;
     this.hits = 0;
@@ -72,12 +75,36 @@ export class HunterVision {
     this.hunterLives = this.maxHunterLives;
   }
 
+  updateRemoteHunter(hunterId, x, y) {
+    if (!hunterId) hunterId = 'default';
+    let hunter = this.remoteHunters.get(hunterId);
+    if (!hunter) {
+      hunter = {
+        currentX: x,
+        currentY: y,
+        targetX: x,
+        targetY: y,
+        lastSeen: Date.now()
+      };
+      this.remoteHunters.set(hunterId, hunter);
+    } else {
+      hunter.targetX = x;
+      hunter.targetY = y;
+      hunter.lastSeen = Date.now();
+    }
+  }
+
+  clearRemoteHunters() {
+    this.remoteHunters.clear();
+  }
+
   setEnabled(val, isSpectator = false) {
     this.enabled = val;
     this.isSpectator = isSpectator;
     if (!val) {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.fxCtx.clearRect(0, 0, this.fxCanvas.width, this.fxCanvas.height);
+      this.clearRemoteHunters();
     }
   }
 
@@ -88,6 +115,7 @@ export class HunterVision {
     this.hunterLives = this.maxHunterLives || 10;
     this.particles = [];
     this.ripples = [];
+    this.clearRemoteHunters();
   }
 
   getAccuracy() {
@@ -254,8 +282,19 @@ export class HunterVision {
   }
 
   updateSmoothPosition() {
-    this.currentX += (this.targetX - this.currentX) * this.smoothSpeed;
-    this.currentY += (this.targetY - this.currentY) * this.smoothSpeed;
+    if (!this.isSpectator) {
+      this.currentX += (this.targetX - this.currentX) * this.smoothSpeed;
+      this.currentY += (this.targetY - this.currentY) * this.smoothSpeed;
+    }
+
+    const now = Date.now();
+    for (const [id, h] of this.remoteHunters.entries()) {
+      h.currentX += (h.targetX - h.currentX) * this.smoothSpeed;
+      h.currentY += (h.targetY - h.currentY) * this.smoothSpeed;
+      if (now - h.lastSeen > 12000) {
+        this.remoteHunters.delete(id);
+      }
+    }
   }
 
   // Render the circular vision flashlight hole through the darkness
@@ -269,36 +308,64 @@ export class HunterVision {
     this.ctx.fillStyle = `rgba(5, 8, 14, ${this.darknessAlpha})`;
     this.ctx.fillRect(0, 0, w, h);
 
-    // 2. Cut circular vision hole using destination-out
+    // Collect all beams to render
+    const beams = [];
+    if (!this.isSpectator) {
+      beams.push({ x: this.currentX, y: this.currentY, id: 'local' });
+    }
+    for (const [id, h] of this.remoteHunters.entries()) {
+      beams.push({ x: h.currentX, y: h.currentY, id });
+    }
+
+    // Fallback beam if spectator has no remote updates yet
+    if (beams.length === 0 && this.isSpectator) {
+      beams.push({ x: this.currentX, y: this.currentY, id: 'fallback' });
+    }
+
+    // 2. Cut circular vision hole for EACH beam using destination-out
     this.ctx.globalCompositeOperation = 'destination-out';
-    const grad = this.ctx.createRadialGradient(
-      this.currentX, this.currentY, this.visionRadius * 0.75,
-      this.currentX, this.currentY, this.visionRadius
-    );
-    grad.addColorStop(0, 'rgba(0, 0, 0, 1)');
-    grad.addColorStop(0.85, 'rgba(0, 0, 0, 0.95)');
-    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    this.ctx.fillStyle = grad;
-    this.ctx.beginPath();
-    this.ctx.arc(this.currentX, this.currentY, this.visionRadius, 0, Math.PI * 2);
-    this.ctx.fill();
+    for (const b of beams) {
+      const grad = this.ctx.createRadialGradient(
+        b.x, b.y, this.visionRadius * 0.75,
+        b.x, b.y, this.visionRadius
+      );
+      grad.addColorStop(0, 'rgba(0, 0, 0, 1)');
+      grad.addColorStop(0.85, 'rgba(0, 0, 0, 0.95)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      this.ctx.fillStyle = grad;
+      this.ctx.beginPath();
+      this.ctx.arc(b.x, b.y, this.visionRadius, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
 
-    // 3. Draw flashlight glass rim & beam ring
+    // 3. Draw flashlight glass rim & beam ring for each beam
     this.ctx.globalCompositeOperation = 'source-over';
-    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
-    this.ctx.lineWidth = 3;
-    this.ctx.shadowColor = '#00f0ff';
-    this.ctx.shadowBlur = 10;
-    this.ctx.beginPath();
-    this.ctx.arc(this.currentX, this.currentY, this.visionRadius, 0, Math.PI * 2);
-    this.ctx.stroke();
+    const rimColors = ['#00f0ff', '#ffb700', '#00ff88', '#ff2a85'];
+    const rimStrokes = [
+      'rgba(0, 240, 255, 0.45)',
+      'rgba(255, 183, 0, 0.45)',
+      'rgba(0, 255, 136, 0.45)',
+      'rgba(255, 42, 133, 0.45)'
+    ];
 
-    // Subtle flashlight center reticle
-    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-    this.ctx.lineWidth = 1;
-    this.ctx.beginPath();
-    this.ctx.arc(this.currentX, this.currentY, 6, 0, Math.PI * 2);
-    this.ctx.stroke();
+    beams.forEach((b, idx) => {
+      const colIdx = idx % rimColors.length;
+      this.ctx.strokeStyle = rimStrokes[colIdx];
+      this.ctx.lineWidth = 3;
+      this.ctx.shadowColor = rimColors[colIdx];
+      this.ctx.shadowBlur = 10;
+      this.ctx.beginPath();
+      this.ctx.arc(b.x, b.y, this.visionRadius, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // Subtle flashlight center reticle
+      this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+      this.ctx.lineWidth = 1;
+      this.ctx.shadowBlur = 0;
+      this.ctx.beginPath();
+      this.ctx.arc(b.x, b.y, 6, 0, Math.PI * 2);
+      this.ctx.stroke();
+    });
 
     this.ctx.restore();
   }
