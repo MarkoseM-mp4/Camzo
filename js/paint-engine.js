@@ -10,7 +10,7 @@ export class PaintEngine {
   constructor(canvasContainer, paintCanvas, bgCanvas) {
     this.container = canvasContainer;
     this.canvas = paintCanvas;
-    this.ctx = this.canvas.getContext('2d');
+    this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
     this.bgCanvas = bgCanvas;
     this.bgCtx = this.bgCanvas.getContext('2d', { willReadFrequently: true });
 
@@ -18,7 +18,7 @@ export class PaintEngine {
     this.currentColor = '#3b82f6';
     this.brushSize = 24;
     this.brushOpacity = 1.0;        // 0.0 – 1.0; changed via Ctrl+Scroll
-    this.brushType = 'solid'; // 'solid', 'spray', 'stipple'
+    this.brushType = 'solid'; // 'solid', 'blend', 'stipple'
     this.isPainting = false;
     this.enabled = false;
 
@@ -396,6 +396,7 @@ export class PaintEngine {
         document.querySelectorAll('.brush-type-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.brushType = btn.dataset.type;
+        this.updateCursorBorderOpacity();
       });
     });
 
@@ -436,6 +437,14 @@ export class PaintEngine {
 
   updateCursorBorderOpacity() {
     if (!this.brushCursorEl) return;
+    if (this.brushType === 'blend') {
+      const opacity = this.brushOpacity !== undefined ? this.brushOpacity : 1.0;
+      this.brushCursorEl.style.borderColor = `rgba(56, 189, 248, ${Math.max(0.4, opacity)})`;
+      this.brushCursorEl.style.backgroundColor = `rgba(56, 189, 248, ${opacity * 0.15})`;
+      this.brushCursorEl.style.borderStyle = 'dashed';
+      return;
+    }
+    this.brushCursorEl.style.borderStyle = 'solid';
     // Make border color semi-transparent to give visual opacity feedback
     const r = parseInt(this.currentColor.slice(1, 3), 16);
     const g = parseInt(this.currentColor.slice(3, 5), 16);
@@ -527,29 +536,161 @@ export class PaintEngine {
     });
   }
 
+  // Blend and soften colors within the circular brush region
+  applyBlend(cx, cy, radius) {
+    const r = Math.max(2, Math.round(radius));
+    const x0 = Math.max(0, Math.floor(cx - r));
+    const y0 = Math.max(0, Math.floor(cy - r));
+    const x1 = Math.min(this.canvas.width, Math.ceil(cx + r));
+    const y1 = Math.min(this.canvas.height, Math.ceil(cy + r));
+    const w = x1 - x0;
+    const h = y1 - y0;
+    if (w <= 1 || h <= 1) return;
+
+    const imgData = this.ctx.getImageData(x0, y0, w, h);
+    const src = imgData.data;
+
+    // Check if any pixels in this patch have paint
+    let hasContent = false;
+    for (let i = 3; i < src.length; i += 4) {
+      if (src[i] > 0) {
+        hasContent = true;
+        break;
+      }
+    }
+    if (!hasContent) return;
+
+    const k = Math.max(2, Math.min(14, Math.round(r * 0.35)));
+    const size = w * h;
+    if (!this._blurBuf || this._blurBuf.length < size * 4) {
+      this._blurBuf = new Float32Array(size * 4);
+      this._blurOut = new Float32Array(size * 4);
+    }
+
+    // 1. Horizontal blur pass (alpha-weighted separable blur)
+    for (let y = 0; y < h; y++) {
+      const rowOffset = y * w;
+      for (let x = 0; x < w; x++) {
+        let sumR = 0, sumG = 0, sumB = 0, sumA = 0, count = 0;
+        const minX = Math.max(0, x - k);
+        const maxX = Math.min(w - 1, x + k);
+        for (let ix = minX; ix <= maxX; ix++) {
+          const idx = (rowOffset + ix) * 4;
+          const a = src[idx + 3];
+          if (a > 0) {
+            sumR += src[idx] * a;
+            sumG += src[idx + 1] * a;
+            sumB += src[idx + 2] * a;
+            sumA += a;
+          }
+          count++;
+        }
+        const bIdx = (rowOffset + x) * 4;
+        if (sumA > 0) {
+          this._blurBuf[bIdx] = sumR / sumA;
+          this._blurBuf[bIdx + 1] = sumG / sumA;
+          this._blurBuf[bIdx + 2] = sumB / sumA;
+          this._blurBuf[bIdx + 3] = sumA / count;
+        } else {
+          this._blurBuf[bIdx] = 0;
+          this._blurBuf[bIdx + 1] = 0;
+          this._blurBuf[bIdx + 2] = 0;
+          this._blurBuf[bIdx + 3] = 0;
+        }
+      }
+    }
+
+    // 2. Vertical blur pass (alpha-weighted separable blur)
+    for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y++) {
+        let sumR = 0, sumG = 0, sumB = 0, sumA = 0, count = 0;
+        const minY = Math.max(0, y - k);
+        const maxY = Math.min(h - 1, y + k);
+        for (let iy = minY; iy <= maxY; iy++) {
+          const idx = (iy * w + x) * 4;
+          const a = this._blurBuf[idx + 3];
+          if (a > 0) {
+            sumR += this._blurBuf[idx] * a;
+            sumG += this._blurBuf[idx + 1] * a;
+            sumB += this._blurBuf[idx + 2] * a;
+            sumA += a;
+          }
+          count++;
+        }
+        const oIdx = (y * w + x) * 4;
+        if (sumA > 0) {
+          this._blurOut[oIdx] = sumR / sumA;
+          this._blurOut[oIdx + 1] = sumG / sumA;
+          this._blurOut[oIdx + 2] = sumB / sumA;
+          this._blurOut[oIdx + 3] = sumA / count;
+        } else {
+          this._blurOut[oIdx] = 0;
+          this._blurOut[oIdx + 1] = 0;
+          this._blurOut[oIdx + 2] = 0;
+          this._blurOut[oIdx + 3] = 0;
+        }
+      }
+    }
+
+    // 3. Circular cosine feathering & strength blending
+    const rSq = r * r;
+    const baseStrength = Math.min(0.85, (this.brushOpacity ?? 1.0) * 0.7);
+
+    for (let y = 0; y < h; y++) {
+      const py = y0 + y;
+      const dy = py - cy;
+      const dySq = dy * dy;
+      if (dySq > rSq) continue;
+
+      for (let x = 0; x < w; x++) {
+        const px = x0 + x;
+        const dx = px - cx;
+        const distSq = dx * dx + dySq;
+        if (distSq >= rSq) continue;
+
+        const idx = (y * w + x) * 4;
+        const origA = src[idx + 3];
+        const blurredA = this._blurOut[idx + 3];
+        if (origA === 0 && blurredA === 0) continue;
+
+        const dist = Math.sqrt(distSq);
+        const normDist = dist / r;
+        const feather = Math.cos(normDist * (Math.PI / 2));
+        const strength = baseStrength * feather;
+
+        const blurredR = this._blurOut[idx];
+        const blurredG = this._blurOut[idx + 1];
+        const blurredB = this._blurOut[idx + 2];
+
+        src[idx] = Math.round(src[idx] + (blurredR - src[idx]) * strength);
+        src[idx + 1] = Math.round(src[idx + 1] + (blurredG - src[idx + 1]) * strength);
+        src[idx + 2] = Math.round(src[idx + 2] + (blurredB - src[idx + 2]) * strength);
+        src[idx + 3] = Math.round(origA + (blurredA - origA) * strength);
+      }
+    }
+
+    this.ctx.putImageData(imgData, x0, y0);
+  }
+
   // SILKY SMOOTH CONTINUOUS BRUSH STROKE (NO "DOT DOT" ARTIFACTS)
   paintSmoothStroke(x1, y1, x2, y2) {
-    this.ctx.save();
-    this.ctx.globalAlpha = this.brushOpacity ?? 1.0; // apply Ctrl+Scroll opacity
-
-    if (this.brushType === 'spray') {
-      // Soft airbrush: dense interpolated spray
+    if (this.brushType === 'blend') {
       const dist = Math.hypot(x2 - x1, y2 - y1);
-      const steps = Math.max(1, Math.ceil(dist / 4));
+      const step = Math.max(3, Math.floor(this.brushSize * 0.25));
+      const steps = Math.max(1, Math.ceil(dist / step));
       for (let i = 0; i <= steps; i++) {
         const t = i / steps;
         const cx = x1 + (x2 - x1) * t;
         const cy = y1 + (y2 - y1) * t;
-        const grad = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, this.brushSize);
-        grad.addColorStop(0, this.currentColor);
-        grad.addColorStop(0.6, this.currentColor);
-        grad.addColorStop(1, 'transparent');
-        this.ctx.fillStyle = grad;
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, this.brushSize, 0, Math.PI * 2);
-        this.ctx.fill();
+        this.applyBlend(cx, cy, this.brushSize);
       }
-    } else if (this.brushType === 'stipple') {
+      return;
+    }
+
+    this.ctx.save();
+    this.ctx.globalAlpha = this.brushOpacity ?? 1.0; // apply Ctrl+Scroll opacity
+
+    if (this.brushType === 'stipple') {
       // Textured stipple along continuous path
       const dist = Math.hypot(x2 - x1, y2 - y1);
       const steps = Math.max(1, Math.ceil(dist / 6));
@@ -587,20 +728,16 @@ export class PaintEngine {
 
   // Paint a single dot on initial click
   paintDot(x, y) {
+    if (this.brushType === 'blend') {
+      this.applyBlend(x, y, this.brushSize);
+      return;
+    }
+
     this.ctx.save();
     this.ctx.globalAlpha = this.brushOpacity ?? 1.0; // apply Ctrl+Scroll opacity
     this.ctx.fillStyle = this.currentColor;
 
-    if (this.brushType === 'spray') {
-      const grad = this.ctx.createRadialGradient(x, y, 0, x, y, this.brushSize);
-      grad.addColorStop(0, this.currentColor);
-      grad.addColorStop(0.6, this.currentColor);
-      grad.addColorStop(1, 'transparent');
-      this.ctx.fillStyle = grad;
-      this.ctx.beginPath();
-      this.ctx.arc(x, y, this.brushSize, 0, Math.PI * 2);
-      this.ctx.fill();
-    } else if (this.brushType === 'stipple') {
+    if (this.brushType === 'stipple') {
       const dots = Math.max(1, Math.floor(this.brushSize * 1.4));
       for (let d = 0; d < dots; d++) {
         const r = Math.random() * this.brushSize;
